@@ -71,7 +71,7 @@ Rectangle {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: "关闭后为英文模式：按键不再被输入法消费，字符直接上屏，不弹出候选栏"
+                        text: "关闭后为英文模式：按键不再被输入法消费，字符直接上屏，不弹出候选栏。输入时单独轻敲 Shift 可快速切换中英文"
                         font.pixelSize: 12
                         opacity: 0.6
                         wrapMode: Text.Wrap

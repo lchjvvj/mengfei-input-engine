@@ -29,8 +29,9 @@ public:
     void activateContext();
     void deactivateContext();
 
-    // 中英文输入模式（设置面板"中文输入"开关驱动）：
-    // 英文模式下 handleKeyEvent 不消费任何按键，合成器直接透传给应用
+    // 中英文输入模式（设置面板"中文输入"开关与 Shift 单独敲击共同驱动）：
+    // 英文模式下 handleKeyEvent 不消费任何按键，合成器直接透传给应用，
+    // 字母不经过输入法直接上屏
     void setChineseMode(bool chinese);
     bool chineseMode() const;
 
@@ -62,9 +63,14 @@ signals:
 private:
     // xkbcommon 解析出的 keysym 分发到对应信号
     bool dispatchKeysym(uint32_t keysym, uint32_t rawKeycode);
+    // 判断 raw keycode 是否为 Shift 键（xkb 解析失败时回退 evdev 硬编码）
+    bool isShiftKey(uint32_t keycode) const;
 
     GXDEInputContext m_ctx;
     bool m_chineseMode = true;   // 默认中文输入
+    bool m_shiftHeld = false;    // Shift 当前处于按下状态
+    bool m_shiftAlone = false;   // Shift 按住期间未敲过其他键（单独敲击）
+    uint32_t m_shiftKeycode = 0; // 按下的 Shift 键码，用于识别同键自动重复
     class Private;
     Private *d;
 };
