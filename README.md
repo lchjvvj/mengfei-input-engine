@@ -35,6 +35,60 @@ gxde-input-engine
 ​
 3. 适配GXDE桌面环境，跟随GXDE主题（深色/浅色）
 
+#### 自动构建
+
+构建脚本位于[./build-deb](./build-deb), 这是个shell脚本，用于在调试时生成安装包，便于在调试机器上轻松部署与卸载。
+
+
+首先先修改脚本权限: 
+
+```bash
+chmod a+x ./build-deb
+```
+
+
+然后以下上参数帮助:
+
+```bash
+用法: ./build-deb <选项>
+
+选项:
+  -b, --binary          仅构建二进制包（默认行为）
+    -d, --install-deps    先安装构建依赖(读 debian/control)，再构建
+    -c, --clean           仅清理构建产物后退出
+    -h, --help            打印帮助信息
+```
+
+初次编译建议执行:
+
+```bash
+./build-deb -d    # 安装依赖并构建
+```
+
+以后就可以不用安装依赖了:
+
+```bash
+./build-deb    # 直接构建
+```
+
+构建完成后清理中间产物: 
+
+```bash
+./build-deb -c
+```
+
+#### 查看运行状态
+
+# 用户会话启用服务
+systemctl --user daemon-reload
+systemctl --user enable --now gxde-input-engine.service
+
+# 查看运行状态
+systemctl --user status gxde-input-engine.service
+
+# 查看日志
+journalctl --user -u gxde-input-engine.service -f
+
 #### 运行流程
 
 1. gxde-wlcom 合成器启动
