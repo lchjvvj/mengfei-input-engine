@@ -5,11 +5,15 @@
 #include <QQuickView>
 #include <QStringList>
 
+class GXDESettings;
+
 class CandidateBar : public QObject
 {
     Q_OBJECT
 public:
-    explicit CandidateBar(QObject *parent = nullptr);
+    // settings：全局设置（主题/候选栏样式），以 settingsCpp 上下文属性
+    // 注入 QML，样式绑定即时生效并随设置面板修改自动更新
+    explicit CandidateBar(GXDESettings *settings, QObject *parent = nullptr);
     ~CandidateBar() override;
 
     // 更新候选栏数据
@@ -17,6 +21,8 @@ public:
     void updateCandidates(const QStringList &list, int selIdx);
     void updatePageInfo(int currentPage, int totalPages);
     void setCursorPos(qreal x, qreal y);
+    // 深色主题切换入口：统一写入 GXDESettings，QML 绑定自动更新配色
+    //（后续接入 gxde-theme-daemon 主题联动时调用此接口即可）
     void setDarkMode(bool dark);
     void hide();
     void show();
@@ -30,6 +36,7 @@ public slots:
 
 private:
     QQuickView *m_view;
+    GXDESettings *m_settings;
 };
 
 #endif // CANDIDATEBAR_HPP

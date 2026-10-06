@@ -25,6 +25,8 @@
       <arg type="i" name="x" direction="in"/>
       <arg type="i" name="y" direction="in"/>
     </method>
+    <!-- 打开输入法设置面板（中英文切换、候选栏样式、主题配置） -->
+    <method name="ShowSettings"/>
 
     <!-- 出站：引擎 -> 合成器（信号广播） -->
     <signal name="PreeditChanged">

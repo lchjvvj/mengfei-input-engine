@@ -24,8 +24,12 @@ qt_add_executable(gxde-input-engine
     src/gxdexkbhandler.cpp
     src/gxdepinyinengine.h
     src/gxdepinyinengine.cpp
+    src/gxdesettings.h
+    src/gxdesettings.cpp
     src/ui/CandidateBar.hpp
     src/ui/CandidateBar.cpp
+    src/ui/SettingsPanel.hpp
+    src/ui/SettingsPanel.cpp
     src/main.cpp
     ${QRC_FILES}
 )

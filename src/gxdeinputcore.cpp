@@ -44,9 +44,27 @@ void GXDEInputCore::deactivateContext()
     qDebug() << "[GXDEInput] Input context deactivated";
 }
 
+void GXDEInputCore::setChineseMode(bool chinese)
+{
+    if (m_chineseMode == chinese)
+        return;
+    m_chineseMode = chinese;
+    emit chineseModeChanged(chinese);
+    qDebug() << "[GXDEInput] Input mode:" << (chinese ? "Chinese" : "English");
+}
+
+bool GXDEInputCore::chineseMode() const
+{
+    return m_chineseMode;
+}
+
 bool GXDEInputCore::handleKeyEvent(uint32_t keycode, bool pressed)
 {
     if (!m_ctx.active || !pressed)
+        return false;
+
+    // 英文模式：不消费按键，合成器按普通键盘输入直接透传给应用
+    if (!m_chineseMode)
         return false;
 
     // 优先使用 xkbcommon 解析 keysym（兼容不同键盘布局）
