@@ -2,7 +2,7 @@
 
 #### 介绍
 
-**GXDE 输入引擎**（Wayland，适配 gxde-wlcom / FlakeWM ）
+**GXDE输入引擎**（Wayland，适配 gxde-wlcom / FlakeWM ）
 
 #### 定位
 
