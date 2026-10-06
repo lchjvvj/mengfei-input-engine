@@ -105,8 +105,7 @@ wayland-scanner private-code zwp-text-input-v3.xml protocol/text-input-v3.c
 wayland-scanner client-header zwp-text-input-v3.xml protocol/text-input-v3.h
 
 
-
-#### 参与贡献
+# 参与贡献
 
 1.  Fork 本仓库
 2.  新建分支
