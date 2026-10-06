@@ -1,0 +1,9 @@
+1. GXDE主题联动：目前 darkMode 是手动设置；可接入GXDE主题守护进程 gxde-theme-daemon 监听主题变更，自动切换候选栏明暗色。
+​
+2. 光标坐标来源：当前是模拟坐标；完整实现需要新增DBus接口，gxde-wlcom把输入框/光标坐标实时推送给 gxde-input-engine 。
+​
+3. 屏幕边界避让：QML已经写了基础避让逻辑，防止候选栏跑到屏幕外。
+​
+4. 快捷键：目前支持鼠标点击选词；可以继续增加键盘上下方向键切换候选词。
+​
+5. Wayland下QtQuick窗口注意：GXDE Wayland会话运行，不要使用X11后端，Qt自动走Wayland。
