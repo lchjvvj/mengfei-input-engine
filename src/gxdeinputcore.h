@@ -29,6 +29,11 @@ public:
     void activateContext();
     void deactivateContext();
 
+    // 中英文输入模式（设置面板"中文输入"开关驱动）：
+    // 英文模式下 handleKeyEvent 不消费任何按键，合成器直接透传给应用
+    void setChineseMode(bool chinese);
+    bool chineseMode() const;
+
     // 按键事件入口，从合成器接收按键
     bool handleKeyEvent(uint32_t keycode, bool pressed);
 
@@ -38,6 +43,8 @@ public:
     void setCandidates(const QStringList &words);
 
 signals:
+    // 中英文模式切换
+    void chineseModeChanged(bool chinese);
     // 通知UI更新候选栏
     void preeditChanged(const QString &text, int cursor);
     void candidateListChanged(const QStringList &list, int sel);
@@ -57,6 +64,7 @@ private:
     bool dispatchKeysym(uint32_t keysym, uint32_t rawKeycode);
 
     GXDEInputContext m_ctx;
+    bool m_chineseMode = true;   // 默认中文输入
     class Private;
     Private *d;
 };

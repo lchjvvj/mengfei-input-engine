@@ -7,10 +7,11 @@
 class GXDEInputCore;
 class GXDEPinyinEngine;
 class CandidateBar;
+class SettingsPanel;
 
 // DBus 双向通信适配层：gxde-wlcom 合成器与输入引擎之间的唯一通道
 // 入站（方法调用，合成器 -> 引擎）：
-//   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos
+//   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos / ShowSettings
 // 出站（信号广播，引擎 -> 合成器）：
 //   PreeditChanged / CandidateListChanged / CommitText / PageInfoChanged
 // 服务名与 debian/gxde-input-engine.service 的 BusName=org.gxde.InputEngine
@@ -25,7 +26,8 @@ public:
     static constexpr const char *kObjectPath = "/org/gxde/InputEngine";
 
     explicit GXDEDBusAdapter(GXDEInputCore *core, GXDEPinyinEngine *pinyin,
-                             CandidateBar *ui, QObject *parent = nullptr);
+                             CandidateBar *ui, SettingsPanel *settingsPanel,
+                             QObject *parent = nullptr);
 
     // 在 session bus 上注册对象与服务名；失败返回 false（总线不可用/名字被占用）
     bool registerService();
@@ -40,6 +42,9 @@ public slots:
     bool ProcessKeyEvent(uint keycode, bool pressed);
     // 光标/输入框全局坐标，候选栏跟随定位（由 gxde-wlcom 实时推送）
     void SetCursorPos(int x, int y);
+    // 打开输入法设置面板（中英文切换、候选栏样式、主题配置），
+    // 供 GXDE 控制中心/合成器调用；面板常驻隐藏，重复调用幂等
+    void ShowSettings();
 
 signals:
     // 预编辑文本更新，cursor 为光标位置（当前实现固定在文本末尾）
@@ -55,6 +60,7 @@ private:
     GXDEInputCore *m_core;
     GXDEPinyinEngine *m_pinyin;
     CandidateBar *m_ui;
+    SettingsPanel *m_settingsPanel;
 };
 
 #endif // GXDEDBUSADAPTER_H
