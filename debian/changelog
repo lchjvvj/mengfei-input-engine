@@ -2,6 +2,9 @@ gxde-input-engine (0.0.2) unstable; urgency=low
 
   * 增加方向键切换候选词、翻页功能
   * 补充src文件夹
+  * 修复构建失败：移除 debian/rules 中已废弃的 dh_systemd_enable/dh_systemd_start
+    override 目标（debhelper 12 起已由 dh_installsystemd 取代，compat 13 下 dh 直接报错）
+  * 移除已弃用的 debian/compat，改用 debhelper-compat (= 13) 声明兼容级别
 
  -- gfc <ffgcc45@qq.com>  Tue, 06 Oct 2026 16:21:00 +0800
 
