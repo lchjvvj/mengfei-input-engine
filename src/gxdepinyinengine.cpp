@@ -1,5 +1,7 @@
 #include "gxdepinyinengine.h"
 
+#include <QMap>
+
 QMap<QString, QStringList> dict = {
     {"ni", {"你", "尼", "拟", "泥", "倪", "妮", "霓", "腻", "涅", "尼米兹"}},
     {"hao", {"好", "浩", "耗", "昊", "灏", "蒿", "嚯", "薅", "颢", "蚝"}},

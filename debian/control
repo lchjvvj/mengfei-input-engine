@@ -2,7 +2,7 @@ Source: gxde-input-engine
 Section: utils
 Priority: optional
 Maintainer: gfc <ffgcc45@qq.com>
-Build-Depends: cmake, qt6-base-dev, qt6-wayland-dev, libwayland-dev, waylandpp-dev, build-essential, debhelper-compat (= 13)
+Build-Depends: cmake, qt6-base-dev, qt6-declarative-dev, qt6-wayland-dev, libwayland-dev, waylandpp-dev, build-essential, debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Homepage: https://gitee.com/vghxug/gxde-input-engine
 
