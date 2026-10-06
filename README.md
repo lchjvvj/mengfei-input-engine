@@ -14,19 +14,6 @@ GXDE 输入引擎（Wayland，适配 gxde-wlcom / FlakeWM / Treeland）
 C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3 （现代Wayland输入标准）
 
 
-#### 整体架构
-
-gxde-input-engine
-├─ gxde-input-core        # 核心输入管理
-│  ├─ wayland text-input-v3 协议实现（和gxde-wlcom通信）
-│  ├─ 预编辑文本(preedit)、候选词(candidate)、提交文本commit
-│  └─ 输入法上下文管理（多窗口、激活状态）
-├─ gxde-input-method      # 内置输入法模块（可插拔）
-│  ├─ 拼音引擎（简易）
-│  └─ 英文/半角符号
-├─ gxde-input-ui          # 候选栏UI（Qt6 Wayland窗口，置顶跟随光标）
-└─ plugin                 # 插件接口，可加载fcitx5输入法插件
-
 #### 使用说明
 
 1. 原生对接  gxde-wlcom ，复用合成器的 text-input-v3
