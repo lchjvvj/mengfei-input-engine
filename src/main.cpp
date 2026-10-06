@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QDebug>
 
+#include "gxdedbusadapter.h"
 #include "gxdeinputcore.h"
 #include "gxdepinyinengine.h"
 #include "ui/CandidateBar.hpp"
@@ -14,6 +15,14 @@ int main(int argc, char *argv[])
     GXDEInputCore core;
     GXDEPinyinEngine pinyin;
     CandidateBar ui;
+
+    // DBus双向通信：gxde-wlcom 方法调用驱动引擎（激活/按键/光标坐标），
+    // 引擎信号回传 preedit/候选/上屏文本给合成器
+    GXDEDBusAdapter dbusAdapter(&core, &pinyin, &ui);
+    if (!dbusAdapter.registerService()) {
+        qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
+        return -1;
+    }
 
     // 信号槽绑定：拼音引擎 <-> UI
     QObject::connect(&pinyin, &GXDEPinyinEngine::preeditUpdate, &ui, &CandidateBar::updatePreedit);
@@ -49,10 +58,8 @@ int main(int argc, char *argv[])
     QObject::connect(&core, &GXDEInputCore::candidateListChanged, &ui, &CandidateBar::updateCandidates);
     QObject::connect(&core, &GXDEInputCore::textCommitted, &ui, &CandidateBar::hide);
 
-    // 模拟激活输入框
-    core.activateContext();
-    // 模拟光标位置（真实场景由gxde-wlcom通过DBus传入）
-    ui.setCursorPos(300,200);
+    // 输入上下文激活与光标坐标不再本地模拟，
+    // 由 gxde-wlcom 通过 DBus 调用 Activate / SetCursorPos 驱动
 
     qDebug() << "GXDE Input Engine with CandidateBar UI running...";
     return app.exec();

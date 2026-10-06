@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GXDE 输入引擎 DBus 接口：gxde-wlcom 与 gxde-input-engine 双向通信契约
+     服务名: org.gxde.InputEngine (session bus)
+     对象路径: /org/gxde/InputEngine
+     gxde-wlcom 侧可用 qdbusxml2cpp 从本文件生成代理/适配器代码 -->
+<node name="/org/gxde/InputEngine">
+  <interface name="org.gxde.InputEngine">
+    <!-- 入站：合成器 -> 引擎 -->
+    <!-- text_input enter：激活输入上下文 -->
+    <method name="Activate"/>
+    <!-- text_input leave：关闭输入上下文并清空状态 -->
+    <method name="Deactivate"/>
+    <!-- text_input reset：清空预编辑与候选，保持上下文激活 -->
+    <method name="Reset"/>
+    <!-- 按键转发：evdev raw keycode + 按下状态，返回引擎是否消费 -->
+    <method name="ProcessKeyEvent">
+      <arg type="u" name="keycode" direction="in"/>
+      <arg type="b" name="pressed" direction="in"/>
+      <arg type="b" name="consumed" direction="out"/>
+    </method>
+    <!-- 光标/输入框全局坐标，候选栏跟随定位 -->
+    <method name="SetCursorPos">
+      <arg type="i" name="x" direction="in"/>
+      <arg type="i" name="y" direction="in"/>
+    </method>
+
+    <!-- 出站：引擎 -> 合成器（信号广播） -->
+    <signal name="PreeditChanged">
+      <arg type="s" name="text"/>
+      <arg type="i" name="cursor"/>
+    </signal>
+    <signal name="CandidateListChanged">
+      <arg type="as" name="candidates"/>
+      <arg type="i" name="selected"/>
+    </signal>
+    <!-- 上屏文本：合成器通过 zwp_text_input_v3.commit_string 提交给应用 -->
+    <signal name="CommitText">
+      <arg type="s" name="text"/>
+    </signal>
+    <signal name="PageInfoChanged">
+      <arg type="i" name="currentPage"/>
+      <arg type="i" name="totalPages"/>
+    </signal>
+  </interface>
+</node>
