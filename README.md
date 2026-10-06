@@ -11,7 +11,7 @@ GXDE 输入引擎（Wayland，适配 gxde-wlcom / FlakeWM / Treeland）
 
 #### 语言
 
-C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3 （现代Wayland输入标准）
+C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3（现代Wayland输入标准）和org.gxde.InputEngine (gxwm协议)
 
 
 #### 使用说明
