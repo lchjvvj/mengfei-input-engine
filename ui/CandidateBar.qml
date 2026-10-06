@@ -1,32 +1,19 @@
-import QtQuick 6.0
-import QtQuick.Controls 6.0
-import QtQuick.Window 6.0
-
 Window {
     id: candidateWin
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
     visible: false
-    width: 420
+    width: 520
     height: 64
-    color: "#F7F7F7"
-
-    // 候选栏位置，由C++侧从gxde-wlcom获取光标坐标并设置
     property real cursorX: 0
     property real cursorY: 0
-
-    // 预编辑文本 + 候选词列表
     property string preeditText: ""
     property list<string> candidates: []
     property int selectedIndex: 0
-
-    // 主题切换，读取GXDE系统主题
     property bool darkMode: false
-    color: darkMode ? "#2E2E2E" : "#FFFFFF"
 
     onCursorXChanged: {
         x = cursorX
         y = cursorY + 24
-        // 边界判断，防止候选栏超出屏幕
         if (x + width > Screen.width)
             x = Screen.width - width
         if (y + height > Screen.height)
@@ -60,16 +47,18 @@ Window {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: {
-                        // 点击候选词，触发选词信号，回传给C++引擎
-                        candidateBarCpp.selectCandidate(index)
-                    }
+                    onClicked: candidateBarCpp.selectCandidate(index)
                 }
             }
         }
+        // 页码提示
+        Text {
+            text: "Pg"
+            font.pixelSize:14
+            color: "#888"
+        }
     }
 
-    // 对外暴露C++对象，QML调用C++槽函数
     Connections {
         target: candidateBarCpp
         function onHide() { candidateWin.visible = false }

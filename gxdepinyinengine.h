@@ -10,24 +10,34 @@ class GXDEPinyinEngine : public QObject
 public:
     explicit GXDEPinyinEngine(QObject *parent = nullptr);
 
-    // 输入拼音字符
     void appendChar(char ch);
     void backspace();
     void clear();
-    // 选候选词
+
     bool selectCandidate(int idx);
+    // 新增：方向键、翻页
+    void selectPrev();
+    void selectNext();
+    void pageUp();
+    void pageDown();
 
     QString getRawPinyin() const;
     QStringList getCandidates() const;
+    int getSelectedIndex() const;
+    int getPageSize() const { return 9; } // 每页最多9个候选，对应数字1-9
 
 signals:
     void preeditUpdate(const QString &pinyin);
-    void candidateUpdate(const QStringList &cands);
+    void candidateUpdate(const QStringList &cands, int selIdx);
     void commitWord(const QString &hanzi);
 
 private:
     QString m_pinyinBuf;
+    QStringList m_allCandidates; // 全部候选（不分页）
+    int m_selectedIndex = 0;
+    int m_pageOffset = 0; // 当前页偏移
     QStringList lookup(const QString &py);
+    void refreshPage();
 };
 
 #endif // GXDEPINYINENGINE_H
