@@ -7,10 +7,13 @@
 #include "gxdeinputcore.h"
 #include "gxdepinyinengine.h"
 #include "ui/CandidateBar.hpp"
+#include "ui/SettingsPanel.hpp"
 
 GXDEDBusAdapter::GXDEDBusAdapter(GXDEInputCore *core, GXDEPinyinEngine *pinyin,
-                                 CandidateBar *ui, QObject *parent)
-    : QObject(parent), m_core(core), m_pinyin(pinyin), m_ui(ui)
+                                  CandidateBar *ui, SettingsPanel *settingsPanel,
+                                  QObject *parent)
+    : QObject(parent), m_core(core), m_pinyin(pinyin), m_ui(ui),
+      m_settingsPanel(settingsPanel)
 {
     // 出站通道：引擎状态变化 -> DBus 信号回传给 gxde-wlcom
     connect(m_pinyin, &GXDEPinyinEngine::preeditUpdate, this,
@@ -80,4 +83,9 @@ bool GXDEDBusAdapter::ProcessKeyEvent(uint keycode, bool pressed)
 void GXDEDBusAdapter::SetCursorPos(int x, int y)
 {
     m_ui->setCursorPos(x, y);
+}
+
+void GXDEDBusAdapter::ShowSettings()
+{
+    m_settingsPanel->show();
 }

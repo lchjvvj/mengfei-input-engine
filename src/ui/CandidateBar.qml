@@ -8,12 +8,14 @@ Window {
     visible: false
     width: 520
     height: 64
+    // 主题与样式绑定 GXDESettings（settingsCpp 上下文属性，由 CandidateBar C++ 注入）：
+    // 设置面板修改深浅色/字号/间距/页码/高亮色后即时生效
+    color: settingsCpp.darkMode ? "#2B2B2B" : "#FFFFFF"
     property real cursorX: 0
     property real cursorY: 0
     property string preeditText: ""
     property list<string> candidates: []
     property int selectedIndex: 0
-    property bool darkMode: false
     property int currentPage: 0
     property int totalPages: 0
 
@@ -28,13 +30,13 @@ Window {
 
     Row {
         anchors.fill: parent
-        spacing: 8
+        spacing: settingsCpp.barSpacing
         padding: 8
 
         Text {
             text: preeditText
-            font.pixelSize: 18
-            color: darkMode ? "#EEEEEE" : "#111111"
+            font.pixelSize: settingsCpp.barFontSize + 2
+            color: settingsCpp.darkMode ? "#EEEEEE" : "#111111"
         }
 
         Repeater {
@@ -44,12 +46,14 @@ Window {
                 Text {
                     text: (index + 1) + "."
                     font.bold: true
-                    color: selectedIndex === index ? "#0078D4" : "#666666"
+                    font.pixelSize: settingsCpp.barFontSize
+                    color: selectedIndex === index ? settingsCpp.accentColor : "#666666"
                 }
                 Text {
                     text: modelData
-                    font.pixelSize: 16
-                    color: selectedIndex === index ? "#0078D4" : darkMode ? "#DDDDDD" : "#222222"
+                    font.pixelSize: settingsCpp.barFontSize
+                    color: selectedIndex === index ? settingsCpp.accentColor
+                                                   : settingsCpp.darkMode ? "#DDDDDD" : "#222222"
                 }
                 MouseArea {
                     anchors.fill: parent
@@ -57,12 +61,12 @@ Window {
                 }
             }
         }
-        // 页码提示：多页候选时显示 1/2 页码
+        // 页码提示：设置开启"显示候选页码"且多页候选时显示 1/2 页码
         Text {
             text: currentPage + "/" + totalPages
-            font.pixelSize:14
+            font.pixelSize: settingsCpp.barFontSize - 2
             color: "#888"
-            visible: totalPages > 1
+            visible: settingsCpp.showPageInfo && totalPages > 1
         }
     }
 

@@ -4,21 +4,29 @@
 #include "gxdedbusadapter.h"
 #include "gxdeinputcore.h"
 #include "gxdepinyinengine.h"
+#include "gxdesettings.h"
 #include "ui/CandidateBar.hpp"
+#include "ui/SettingsPanel.hpp"
 
 int main(int argc, char *argv[])
 {
     // QML窗口必须使用QGuiApplication，不能QCoreApplication！
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName("gxde-input-engine");
+    // 引擎是后台常驻服务（systemd user 单元）：关闭设置面板窗口
+    // 是"最后一个窗口关闭"，不能触发进程退出
+    QGuiApplication::setQuitOnLastWindowClosed(false);
 
+    // 全局设置：中英文切换、候选栏样式、主题；设置面板与候选栏共用
+    GXDESettings settings;
     GXDEInputCore core;
     GXDEPinyinEngine pinyin;
-    CandidateBar ui;
+    CandidateBar ui(&settings);
+    SettingsPanel settingsPanel(&settings);
 
-    // DBus双向通信：gxde-wlcom 方法调用驱动引擎（激活/按键/光标坐标），
+    // DBus双向通信：gxde-wlcom 方法调用驱动引擎（激活/按键/光标坐标/打开设置面板），
     // 引擎信号回传 preedit/候选/上屏文本给合成器
-    GXDEDBusAdapter dbusAdapter(&core, &pinyin, &ui);
+    GXDEDBusAdapter dbusAdapter(&core, &pinyin, &ui, &settingsPanel);
     if (!dbusAdapter.registerService()) {
         qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
         return -1;
@@ -52,6 +60,18 @@ int main(int argc, char *argv[])
         }
     });
     QObject::connect(&core, &GXDEInputCore::keyBackspace, &pinyin, &GXDEPinyinEngine::backspace);
+
+    // 中英文切换：设置面板开关 -> 输入核心按键消费策略。
+    // 英文模式下 handleKeyEvent 一律不消费，合成器把按键直接透传给应用；
+    // 切到英文时清空正在组字的拼音（触发空候选，候选栏自动隐藏）
+    core.setChineseMode(settings.chineseEnabled());
+    QObject::connect(&settings, &GXDESettings::chineseEnabledChanged,
+                     &core, &GXDEInputCore::setChineseMode);
+    QObject::connect(&settings, &GXDESettings::chineseEnabledChanged,
+                     &pinyin, [&pinyin](bool enabled){
+        if (!enabled)
+            pinyin.clear();
+    });
 
     // 输入上下文激活时显示UI，失活隐藏
     QObject::connect(&core, &GXDEInputCore::preeditChanged, &ui, &CandidateBar::updatePreedit);
