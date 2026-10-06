@@ -1,3 +1,17 @@
+gxde-input-engine (0.0.4) unstable; urgency=low
+
+  * 修复编译错误：恢复被 !4 截断的 gxdeinputcore.h/.cpp、main.cpp 完整代码，
+    并保留 !4 新增的方向键/翻页/数字选词信号与按键分发逻辑
+  * gxdeinputcore.h 补充 <cstdint>，修复 uint32_t 未声明
+  * gxdepinyinengine.cpp 补充 #include <QMap>，修复 dict 不完整类型初始化错误
+  * CandidateBar.qml 恢复被误删的 QtQuick/Window import
+  * 新增 protocol/zwp-text-input-v3.xml（取自 wayland-protocols 上游），
+    修复 CMake install 引用缺失文件导致无法出包
+  * debian/control Build-Depends 补充 qt6-declarative-dev
+    （CMake find_package Qt6 Quick/QuickControls2 所需）
+
+ -- gfc <ffgcc45@qq.com>  Tue, 06 Oct 2026 18:30:00 +0800
+
 gxde-input-engine (0.0.3) unstable; urgency=low
 
   * 增加方向键切换候选词、翻页功能
