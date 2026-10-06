@@ -31,6 +31,13 @@ void CandidateBar::updateCandidates(const QStringList &list, int selIdx)
     root->setProperty("selectedIndex", selIdx);
 }
 
+void CandidateBar::updatePageInfo(int currentPage, int totalPages)
+{
+    QObject *root = m_view->rootObject();
+    root->setProperty("currentPage", currentPage);
+    root->setProperty("totalPages", totalPages);
+}
+
 void CandidateBar::setCursorPos(qreal x, qreal y)
 {
     QObject *root = m_view->rootObject();

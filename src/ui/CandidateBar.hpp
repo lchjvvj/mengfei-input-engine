@@ -15,6 +15,7 @@ public:
     // 更新候选栏数据
     void updatePreedit(const QString &text);
     void updateCandidates(const QStringList &list, int selIdx);
+    void updatePageInfo(int currentPage, int totalPages);
     void setCursorPos(qreal x, qreal y);
     void setDarkMode(bool dark);
     void hide();

@@ -24,6 +24,8 @@ int main(int argc, char *argv[])
     });
     QObject::connect(&ui, &CandidateBar::candidateSelected, &pinyin, &GXDEPinyinEngine::selectCandidate);
     QObject::connect(&pinyin, &GXDEPinyinEngine::commitWord, &core, &GXDEInputCore::commitString);
+    // 页码更新：候选栏显示 1/2 形式的页码
+    QObject::connect(&pinyin, &GXDEPinyinEngine::pageInfoUpdate, &ui, &CandidateBar::updatePageInfo);
 
     // 信号绑定：方向键、翻页、数字选词
     QObject::connect(&core, &GXDEInputCore::keyUp, &pinyin, &GXDEPinyinEngine::selectPrev);
@@ -31,6 +33,16 @@ int main(int argc, char *argv[])
     QObject::connect(&core, &GXDEInputCore::keyPageUp, &pinyin, &GXDEPinyinEngine::pageUp);
     QObject::connect(&core, &GXDEInputCore::keyPageDown, &pinyin, &GXDEPinyinEngine::pageDown);
     QObject::connect(&core, &GXDEInputCore::keyNumber, &pinyin, &GXDEPinyinEngine::selectCandidate);
+
+    // xkbcommon 解析出的按键：字符进拼音预编辑，退格删除末位字符
+    QObject::connect(&core, &GXDEInputCore::keyCharacter, &pinyin, [&pinyin](const QString &text){
+        for (const QChar &ch : text) {
+            const QChar lower = ch.toLower();
+            if (lower >= QLatin1Char('a') && lower <= QLatin1Char('z'))
+                pinyin.appendChar(lower.toLatin1());
+        }
+    });
+    QObject::connect(&core, &GXDEInputCore::keyBackspace, &pinyin, &GXDEPinyinEngine::backspace);
 
     // 输入上下文激活时显示UI，失活隐藏
     QObject::connect(&core, &GXDEInputCore::preeditChanged, &ui, &CandidateBar::updatePreedit);
