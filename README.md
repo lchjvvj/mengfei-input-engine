@@ -35,6 +35,26 @@ gxde-input-engine
 ​
 3. 适配GXDE桌面环境，跟随GXDE主题（深色/浅色）
 
+#### 运行流程
+
+1. gxde-wlcom 合成器启动
+
+​
+2.  gxde-input-engine  作为独立后台进程启动（systemd/user 服务）
+
+​
+3. 用户点击输入框 → gxde-wlcom发送 text_input enter 事件
+
+​
+4. 引擎激活，监听键盘事件（从gxde-wlcom接收按键）
+
+​
+5. 输入拼音 → 拼音引擎查询候选词，更新候选UI
+
+​
+6. 数字选择候选 → 提交汉字到Wayland应用（浏览器、GXDE控制中心等）
+
+
 #### 参与贡献
 
 1.  Fork 本仓库
