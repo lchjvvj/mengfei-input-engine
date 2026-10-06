@@ -15,6 +15,7 @@ qt_add_executable(gxde-input-engine
     gxdepinyinengine.h
     gxdepinyinengine.cpp
     main.cpp
+    main.h
 )
 
 target_link_libraries(gxde-input-engine PRIVATE Qt6::Core Qt6::Gui Qt6::WaylandClient Wayland::Client)
