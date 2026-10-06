@@ -9,9 +9,6 @@ override_dh_auto_configure:
 override_dh_install:
 	dh_install
 	# install systemd user service
+	# note: dh_installsystemd does not touch units under systemd/user/,
+	# user units are enabled per-user via "systemctl --user enable"
 	install -Dm644 debian/gxde-input-engine.service debian/gxde-input-engine/usr/lib/systemd/user/gxde-input-engine.service
-
-override_dh_systemd_enable:
-	dh_systemd_enable --user
-override_dh_systemd_start:
-	dh_systemd_start --user
