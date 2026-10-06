@@ -60,6 +60,7 @@ gxde-input-engine
 需要安装 wayland-scanner ，从 zwp-text-input-v3.xml 生成协议代码：
 
 wayland-scanner private-code zwp-text-input-v3.xml protocol/text-input-v3.c
+
 wayland-scanner client-header zwp-text-input-v3.xml protocol/text-input-v3.h
 
 #### 参与贡献
