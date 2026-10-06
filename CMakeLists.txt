@@ -10,11 +10,11 @@ find_package(Wayland REQUIRED Client)
 qt_standard_project_setup()
 
 qt_add_executable(gxde-input-engine
-    src/gxdeinputcore.h
-    src/gxdeinputcore.cpp
-    src/gxdepinyinengine.h
-    src/gxdepinyinengine.cpp
-    src/main.cpp
+    gxdeinputcore.h
+    gxdeinputcore.cpp
+    gxdepinyinengine.h
+    gxdepinyinengine.cpp
+    main.cpp
 )
 
 target_link_libraries(gxde-input-engine PRIVATE Qt6::Core Qt6::Gui Qt6::WaylandClient Wayland::Client)
