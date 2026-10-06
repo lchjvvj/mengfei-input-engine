@@ -4,7 +4,7 @@ project(gxde-input-engine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui WaylandClient Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui WaylandClient Quick QuickControls2)
 find_package(Wayland REQUIRED Client)
 # xkbcommon：raw keycode -> keysym 解析（键码映射骨架）
 find_package(PkgConfig REQUIRED)
@@ -16,6 +16,8 @@ qt_add_resources(QRC_FILES src/ui/qml.qrc)
 qt_add_executable(gxde-input-engine
     src/gxdeinputcore.h
     src/gxdeinputcore.cpp
+    src/gxdedbusadapter.h
+    src/gxdedbusadapter.cpp
     src/gxdexkbhandler.h
     src/gxdexkbhandler.cpp
     src/gxdepinyinengine.h
@@ -27,10 +29,12 @@ qt_add_executable(gxde-input-engine
 )
 
 target_link_libraries(gxde-input-engine PRIVATE
-    Qt6::Core Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
+    Qt6::Core Qt6::DBus Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
     Wayland::Client
     PkgConfig::XKBCOMMON
 )
 
 install(TARGETS gxde-input-engine DESTINATION bin)
 install(FILES protocol/zwp-text-input-v3.xml DESTINATION share/wayland/protocols)
+# DBus 接口描述：gxde-wlcom 侧可用 qdbusxml2cpp 生成代理代码
+install(FILES protocol/org.gxde.InputEngine.xml DESTINATION share/dbus-1/interfaces)
