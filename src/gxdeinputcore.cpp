@@ -39,6 +39,9 @@ void GXDEInputCore::deactivateContext()
     m_ctx.active = false;
     m_ctx.preeditText.clear();
     m_ctx.candidates.clear();
+    // 失活时丢弃未完成的 Shift 敲击跟踪，避免下次激活误触发切换
+    m_shiftHeld = false;
+    m_shiftAlone = false;
     emit preeditChanged("", 0);
     emit candidateListChanged({}, 0);
     qDebug() << "[GXDEInput] Input context deactivated";
@@ -60,10 +63,41 @@ bool GXDEInputCore::chineseMode() const
 
 bool GXDEInputCore::handleKeyEvent(uint32_t keycode, bool pressed)
 {
-    if (!m_ctx.active || !pressed)
+    if (!m_ctx.active)
         return false;
 
-    // 英文模式：不消费按键，合成器按普通键盘输入直接透传给应用
+    // Shift 单独敲击切换中英文：按下时标记"单独敲击"，按住期间敲过
+    // 任何其他键（含另一个 Shift）视为组合键；释放时若仍是单独敲击，
+    // 切换中英文模式。Shift 本身按下/释放均不消费，应用侧修饰键状态保持一致
+    const bool shiftKey = isShiftKey(keycode);
+    if (pressed) {
+        if (shiftKey) {
+            if (m_shiftHeld && keycode != m_shiftKeycode) {
+                m_shiftAlone = false;   // 双 Shift 同按：视为组合，不触发切换
+            } else {
+                // 首次按下或同键自动重复：保持"单独敲击"标记
+                if (!m_shiftHeld)
+                    m_shiftAlone = true;
+                m_shiftHeld = true;
+                m_shiftKeycode = keycode;
+            }
+        } else if (m_shiftHeld) {
+            m_shiftAlone = false;       // Shift+其他键：组合，不触发切换
+        }
+    } else if (shiftKey && m_shiftHeld) {
+        const bool alone = m_shiftAlone;
+        m_shiftHeld = false;
+        m_shiftAlone = false;
+        if (alone)
+            setChineseMode(!m_chineseMode);
+    }
+
+    // 释放事件一律不消费（Shift 切换已在上方触发，按键仍透传给应用）
+    if (!pressed)
+        return false;
+
+    // 英文模式：不消费按键，合成器按普通键盘输入直接透传给应用，
+    // 字母不经输入法直接上屏
     if (!m_chineseMode)
         return false;
 
@@ -135,6 +169,17 @@ bool GXDEInputCore::dispatchKeysym(uint32_t keysym, uint32_t rawKeycode)
     // 其余按键（功能键等）保持与旧逻辑一致，原样透传 raw keycode
     emit keyRawEvent(rawKeycode);
     return true;
+}
+
+bool GXDEInputCore::isShiftKey(uint32_t keycode) const
+{
+    // 优先 xkbcommon 解析（Shift 自身 keysym 不受修饰键状态影响，解析可靠）
+    if (d->xkb.isValid()) {
+        const uint32_t keysym = d->xkb.keysymFromKeycode(keycode);
+        return keysym == XKB_KEY_Shift_L || keysym == XKB_KEY_Shift_R;
+    }
+    // 回退：evdev 硬编码键码，左Shift=42，右Shift=54
+    return keycode == 42 || keycode == 54;
 }
 
 void GXDEInputCore::commitString(const QString &str)

@@ -61,12 +61,17 @@ int main(int argc, char *argv[])
     });
     QObject::connect(&core, &GXDEInputCore::keyBackspace, &pinyin, &GXDEPinyinEngine::backspace);
 
-    // 中英文切换：设置面板开关 -> 输入核心按键消费策略。
-    // 英文模式下 handleKeyEvent 一律不消费，合成器把按键直接透传给应用；
-    // 切到英文时清空正在组字的拼音（触发空候选，候选栏自动隐藏）
+    // 中英文切换：设置面板开关与 Shift 单独敲击双向同步。
+    // 英文模式下 handleKeyEvent 一律不消费，合成器把按键直接透传给应用，
+    // 字母不经输入法直接上屏；切到英文时清空正在组字的拼音
+    //（触发空候选，候选栏自动隐藏）
     core.setChineseMode(settings.chineseEnabled());
     QObject::connect(&settings, &GXDESettings::chineseEnabledChanged,
                      &core, &GXDEInputCore::setChineseMode);
+    // Shift 敲击切换的模式变化回写设置：持久化到 ini 并同步面板开关；
+    // setChineseMode/setChineseEnabled 值相等时均直接返回，不会循环触发
+    QObject::connect(&core, &GXDEInputCore::chineseModeChanged,
+                     &settings, &GXDESettings::setChineseEnabled);
     QObject::connect(&settings, &GXDESettings::chineseEnabledChanged,
                      &pinyin, [&pinyin](bool enabled){
         if (!enabled)
