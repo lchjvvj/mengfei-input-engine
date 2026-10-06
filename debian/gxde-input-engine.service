@@ -1,0 +1,18 @@
+[Unit]
+Description=GXDE Native Input Engine
+Documentation=man:gxde-input-engine(1)
+After=graphical-session.target wayland-session.target gxde-wlcom.service
+Requires=gxde-wlcom.service
+
+[Service]
+Type=dbus
+BusName=org.gxde.InputEngine
+ExecStart=/usr/bin/gxde-input-engine
+Restart=on-failure
+RestartSec=3
+# 日志输出
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=wayland-session.target
