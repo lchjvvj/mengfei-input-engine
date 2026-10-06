@@ -42,15 +42,20 @@ signals:
     void preeditChanged(const QString &text, int cursor);
     void candidateListChanged(const QStringList &list, int sel);
     void textCommitted(const QString &text);
-    // 按键分发信号：普通字符键、方向键、翻页、数字选词
+    // 按键分发信号：普通字符键、方向键、翻页、数字选词、退格
     void keyRawEvent(uint32_t keycode);
+    void keyCharacter(const QString &text); // xkbcommon 解析出的可打印文本
     void keyUp();
     void keyDown();
     void keyPageUp();
     void keyPageDown();
     void keyNumber(int num);
+    void keyBackspace();
 
 private:
+    // xkbcommon 解析出的 keysym 分发到对应信号
+    bool dispatchKeysym(uint32_t keysym, uint32_t rawKeycode);
+
     GXDEInputContext m_ctx;
     class Private;
     Private *d;

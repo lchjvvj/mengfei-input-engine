@@ -1,5 +1,7 @@
 #include "gxdeinputcore.h"
+#include "gxdexkbhandler.h"
 #include <QDebug>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 // 前置声明 Wayland 协议类型，真实项目由 wayland-scanner 从
 // protocol/zwp-text-input-v3.xml 生成完整定义
@@ -12,6 +14,8 @@ public:
     // 简化：真实项目需要wayland协议生成的struct与回调
     zwp_text_input_v3 *textInput = nullptr;
     wl_display *display = nullptr;
+    // xkbcommon 键码解析：raw keycode -> keysym，兼容不同键盘布局
+    GXDEXkbHandler xkb;
 };
 
 GXDEInputCore::GXDEInputCore(QObject *parent)
@@ -45,7 +49,11 @@ bool GXDEInputCore::handleKeyEvent(uint32_t keycode, bool pressed)
     if (!m_ctx.active || !pressed)
         return false;
 
-    // 这里是简化映射，真实环境需要使用libinput的keysym转换
+    // 优先使用 xkbcommon 解析 keysym（兼容不同键盘布局）
+    if (d->xkb.isValid())
+        return dispatchKeysym(d->xkb.keysymFromKeycode(keycode), keycode);
+
+    // 回退：旧的硬编码键码表，仅在 xkbcommon 初始化失败时使用
     switch(keycode)
     {
         case 106: // Down
@@ -69,6 +77,46 @@ bool GXDEInputCore::handleKeyEvent(uint32_t keycode, bool pressed)
             emit keyRawEvent(keycode);
             return true;
     }
+}
+
+bool GXDEInputCore::dispatchKeysym(uint32_t keysym, uint32_t rawKeycode)
+{
+    switch (keysym) {
+        case XKB_KEY_Up:
+            emit keyUp();
+            return true;
+        case XKB_KEY_Down:
+            emit keyDown();
+            return true;
+        case XKB_KEY_Page_Up:
+            emit keyPageUp();
+            return true;
+        case XKB_KEY_Page_Down:
+            emit keyPageDown();
+            return true;
+        case XKB_KEY_BackSpace:
+            emit keyBackspace();
+            return true;
+        default:
+            break;
+    }
+
+    // 主键盘数字1~9：选词，对应页内索引0~8
+    if (keysym >= XKB_KEY_1 && keysym <= XKB_KEY_9) {
+        emit keyNumber(static_cast<int>(keysym - XKB_KEY_1));
+        return true;
+    }
+
+    // 可打印字符：xkbcommon 转成文本后交给拼音引擎
+    const QString text = GXDEXkbHandler::textFromKeysym(keysym);
+    if (!text.isEmpty()) {
+        emit keyCharacter(text);
+        return true;
+    }
+
+    // 其余按键（功能键等）保持与旧逻辑一致，原样透传 raw keycode
+    emit keyRawEvent(rawKeycode);
+    return true;
 }
 
 void GXDEInputCore::commitString(const QString &str)

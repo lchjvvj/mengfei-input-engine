@@ -6,6 +6,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui WaylandClient Quick QuickControls2)
 find_package(Wayland REQUIRED Client)
+# xkbcommon：raw keycode -> keysym 解析（键码映射骨架）
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 
 qt_standard_project_setup()
 qt_add_resources(QRC_FILES src/ui/qml.qrc)
@@ -13,6 +16,8 @@ qt_add_resources(QRC_FILES src/ui/qml.qrc)
 qt_add_executable(gxde-input-engine
     src/gxdeinputcore.h
     src/gxdeinputcore.cpp
+    src/gxdexkbhandler.h
+    src/gxdexkbhandler.cpp
     src/gxdepinyinengine.h
     src/gxdepinyinengine.cpp
     src/ui/CandidateBar.hpp
@@ -24,6 +29,7 @@ qt_add_executable(gxde-input-engine
 target_link_libraries(gxde-input-engine PRIVATE
     Qt6::Core Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
     Wayland::Client
+    PkgConfig::XKBCOMMON
 )
 
 install(TARGETS gxde-input-engine DESTINATION bin)

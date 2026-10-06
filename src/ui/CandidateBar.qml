@@ -14,6 +14,8 @@ Window {
     property list<string> candidates: []
     property int selectedIndex: 0
     property bool darkMode: false
+    property int currentPage: 0
+    property int totalPages: 0
 
     onCursorXChanged: {
         x = cursorX
@@ -55,11 +57,12 @@ Window {
                 }
             }
         }
-        // 页码提示
+        // 页码提示：多页候选时显示 1/2 页码
         Text {
-            text: "Pg"
+            text: currentPage + "/" + totalPages
             font.pixelSize:14
             color: "#888"
+            visible: totalPages > 1
         }
     }
 

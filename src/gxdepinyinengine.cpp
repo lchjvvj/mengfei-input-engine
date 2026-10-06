@@ -43,6 +43,7 @@ void GXDEPinyinEngine::clear()
     m_selectedIndex = 0;
     emit preeditUpdate("");
     emit candidateUpdate({}, 0);
+    emit pageInfoUpdate(0, 0);
 }
 
 bool GXDEPinyinEngine::selectCandidate(int idx)
@@ -126,6 +127,18 @@ int GXDEPinyinEngine::getSelectedIndex() const
     return m_selectedIndex;
 }
 
+int GXDEPinyinEngine::getCurrentPage() const
+{
+    if (m_allCandidates.isEmpty()) return 0;
+    return m_pageOffset / getPageSize() + 1;
+}
+
+int GXDEPinyinEngine::getTotalPages() const
+{
+    if (m_allCandidates.isEmpty()) return 0;
+    return (m_allCandidates.size() + getPageSize() - 1) / getPageSize();
+}
+
 QStringList GXDEPinyinEngine::lookup(const QString &py)
 {
     if (py.isEmpty()) return {};
@@ -140,4 +153,5 @@ void GXDEPinyinEngine::refreshPage()
     QStringList pageCand = getCandidates();
     emit preeditUpdate(m_pinyinBuf);
     emit candidateUpdate(pageCand, m_selectedIndex);
+    emit pageInfoUpdate(getCurrentPage(), getTotalPages());
 }
