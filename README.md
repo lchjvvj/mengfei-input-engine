@@ -2,7 +2,7 @@
 
 #### 介绍
 
-GXDE 输入引擎（Wayland，适配 gxde-wlcom / FlakeWM / Treeland）
+GXDE 输入引擎（Wayland，适配 gxde-wlcom / FlakeWM ）
 
 #### 定位
 
@@ -95,14 +95,6 @@ journalctl --user -u gxde-input-engine.service -f
 ​
 6. 数字选择候选 → 提交汉字到Wayland应用（浏览器、GXDE控制中心等）
 
-
-#### 配套：生成Wayland协议代码说明
-
-需要安装 wayland-scanner ，从 zwp-text-input-v3.xml 生成协议代码：
-
-wayland-scanner private-code zwp-text-input-v3.xml protocol/text-input-v3.c
-
-wayland-scanner client-header zwp-text-input-v3.xml protocol/text-input-v3.h
 
 
 # 参与贡献
