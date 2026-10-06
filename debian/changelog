@@ -1,3 +1,20 @@
+gxde-input-engine (0.0.6) unstable; urgency=low
+
+  * 候选栏页码显示：拼音引擎新增 pageInfoUpdate 信号（当前页/总页数），
+    CandidateBar 在 UI 上显示 1/2 形式页码（多页时可见），替换原 "Pg" 占位
+  * 新增 GXDEXkbHandler：xkbcommon 键码解析骨架，raw evdev keycode 经
+    xkb_context/xkb_keymap/xkb_state 转 keysym，再解析为方向键/翻页/数字/
+    可打印字符信号，兼容不同键盘布局；预留 reloadKeymap 布局热切换与
+    updateMask 修饰键同步接口
+  * GXDEInputCore::handleKeyEvent 优先走 xkbcommon 解析，初始化失败时
+    回退原硬编码键码表，保持旧行为兼容
+  * 新增 keyCharacter/keyBackspace 信号并在 main.cpp 接入拼音引擎
+    （字符进预编辑、退格删末位），补齐按键到候选词的输出链路
+  * CMakeLists 通过 pkg-config 引入 xkbcommon，debian/control
+    Build-Depends 补充 libxkbcommon-dev
+
+ -- gfc <ffgcc45@qq.com>  Tue, 06 Oct 2026 20:30:00 +0800
+
 gxde-input-engine (0.0.5) unstable; urgency=low
 
   * 修复 dpkg-gencontrol 警告：${shlibs:Depends} unused, but is defined

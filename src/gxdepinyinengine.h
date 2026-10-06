@@ -25,10 +25,14 @@ public:
     QStringList getCandidates() const;
     int getSelectedIndex() const;
     int getPageSize() const { return 9; } // 每页最多9个候选，对应数字1-9
+    // 页码信息（1起始）；无候选时均为0，供UI显示 "1/2" 页码
+    int getCurrentPage() const;
+    int getTotalPages() const;
 
 signals:
     void preeditUpdate(const QString &pinyin);
     void candidateUpdate(const QStringList &cands, int selIdx);
+    void pageInfoUpdate(int currentPage, int totalPages);
     void commitWord(const QString &hanzi);
 
 private:
