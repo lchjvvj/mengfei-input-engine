@@ -1,3 +1,26 @@
+gxde-input-engine (0.0.7) unstable; urgency=low
+
+  * 接入 librime（Rime 中州韵）替换写死的 QMap 简易词库：GXDEPinyinEngine
+    重写为 librime 后端（rime_get_api vtable，兼容 librime 1.8~1.13+），
+    词库、候选排序、分页、选词均由 Rime 方案驱动；对外接口与信号保持不变，
+    main.cpp / DBus 适配层 / 候选栏 UI 无需改动
+  * librime 全局初始化采用 Q_GLOBAL_STATIC 单例，首次运行自动部署方案并
+    编译词典（阻塞等待），用户数据与词频保存在
+    ~/.config/gxde-input-engine/rime/；首次运行写入 default.custom.yaml
+    默认启用朙月拼音·简化字（luna_pinyin_simp），避免默认方案列表引用
+    未安装的方案数据导致部署失败，且不覆盖用户已有自定义配置
+  * 选词策略：方案配置了选词键（select_keys）时按键直选，否则以
+    Up/Down 移动高亮后空格确认（与 ibus-rime 一致）；上屏文本经
+    commitWord -> GXDEInputCore::commitString 原链路提交；预编辑显示
+    Rime 分音节串（如 "ni hao"）；页码按"是否最后一页"推算
+  * CMakeLists 通过 pkg-config 引入 rime 并注入 GXDE_VERSION 编译定义；
+    debian/control Build-Depends 补充 librime-dev，Depends 补充
+    librime-data、rime-data-luna-pinyin（方案与词典数据）
+  * 文档同步：README 更新引擎定位与运行依赖说明，已知问题移除已解决的
+    "拼音词库" 条目
+
+ -- gfc <ffgcc45@qq.com>  Tue, 06 Oct 2026 22:45:00 +0800
+
 gxde-input-engine (0.0.6) unstable; urgency=low
 
   * 候选栏页码显示：拼音引擎新增 pageInfoUpdate 信号（当前页/总页数），
