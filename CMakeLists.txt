@@ -11,12 +11,12 @@ qt_standard_project_setup()
 qt_add_resources(QRC_FILES src/ui/qml.qrc)
 
 qt_add_executable(gxde-input-engine
-    gxdeinputcore.h
-    gxdeinputcore.cpp
-    gxdepinyinengine.h
-    gxdepinyinengine.cpp
-    ui/CandidateBar.hpp
-    ui/CandidateBar.cpp
+    src/gxdeinputcore.h
+    src/gxdeinputcore.cpp
+    src/gxdepinyinengine.h
+    src/gxdepinyinengine.cpp
+    src/ui/CandidateBar.hpp
+    src/ui/CandidateBar.cpp
     src/main.cpp
     ${QRC_FILES}
 )
