@@ -1,3 +1,7 @@
+import QtQuick 6.0
+import QtQuick.Controls 6.0
+import QtQuick.Window 6.0
+
 Window {
     id: candidateWin
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
