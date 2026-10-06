@@ -1,2 +1,3 @@
-实现DBus双向通信完整代码（gxde-wlcom调用input-engine，引擎回传preedit/candidate给合成器）
-​增加方向键切换候选词、翻页功能（候选词多页）
+## 实现DBus双向通信完整代码（gxde-wlcom调用input-engine，引擎回传preedit/candidate给合成器）
+
+​## 增加方向键切换候选词、翻页功能（候选词多页）
