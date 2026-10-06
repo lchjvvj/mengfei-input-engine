@@ -9,6 +9,8 @@ find_package(Wayland REQUIRED Client)
 # xkbcommon：raw keycode -> keysym 解析（键码映射骨架）
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
+# librime（Rime 中州韵）：拼音词库与候选引擎，替代内置 QMap 简易词库
+pkg_check_modules(RIME REQUIRED IMPORTED_TARGET rime)
 
 qt_standard_project_setup()
 qt_add_resources(QRC_FILES src/ui/qml.qrc)
@@ -28,10 +30,13 @@ qt_add_executable(gxde-input-engine
     ${QRC_FILES}
 )
 
+target_compile_definitions(gxde-input-engine PRIVATE GXDE_VERSION="${PROJECT_VERSION}")
+
 target_link_libraries(gxde-input-engine PRIVATE
     Qt6::Core Qt6::DBus Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
     Wayland::Client
     PkgConfig::XKBCOMMON
+    PkgConfig::RIME
 )
 
 install(TARGETS gxde-input-engine DESTINATION bin)

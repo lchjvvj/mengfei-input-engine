@@ -6,12 +6,12 @@
 
 #### 定位
 
-独立输入法框架后端，对接 Wayland 合成器（gxde-wlcom），兼容 fcitx5 协议，同时自带简易输入法模块，支持中文/英文切换、候选栏、预编辑文本，可集成到GXDE桌面。
+独立输入法框架后端，对接 Wayland 合成器（gxde-wlcom），兼容 fcitx5 协议，同时内置基于 librime（Rime 中州韵）的拼音输入引擎，支持中文/英文切换、候选栏、预编辑文本，可集成到GXDE桌面。
 
 
 #### 语言
 
-C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3（现代Wayland输入标准）和org.gxde.InputEngine (gxwm协议)
+C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3（现代Wayland输入标准）和org.gxde.InputEngine (gxwm协议)，拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
@@ -21,6 +21,8 @@ C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-
 2. 可选两种模式：独立内置引擎 / 作为fcitx5前端代理
 ​
 3. 适配GXDE桌面环境，跟随GXDE主题（深色/浅色）
+​
+4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署朙月拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/gxde-input-engine/rime/
 
 #### 自动构建
 

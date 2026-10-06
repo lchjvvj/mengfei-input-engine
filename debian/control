@@ -2,13 +2,13 @@ Source: gxde-input-engine
 Section: utils
 Priority: optional
 Maintainer: gfc <ffgcc45@qq.com>
-Build-Depends: cmake, qt6-base-dev, qt6-declarative-dev, qt6-wayland-dev, libwayland-dev, waylandpp-dev, libxkbcommon-dev, build-essential, debhelper-compat (= 13)
+Build-Depends: cmake, qt6-base-dev, qt6-declarative-dev, qt6-wayland-dev, libwayland-dev, waylandpp-dev, libxkbcommon-dev, librime-dev, build-essential, debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Homepage: https://gitee.com/vghxug/gxde-input-engine
 
 Package: gxde-input-engine
 Architecture: amd64 arm64
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: librime-data, rime-data-luna-pinyin, ${shlibs:Depends}, ${misc:Depends}
 Description: GXDE Native Wayland Input Engine
  Native input engine for GXDE OS, works with gxde-wlcom / FlakeWM / Treeland.
- Built-in simple pinyin engine, follow zwp-text-input-v3 protocol.
+ Pinyin engine powered by librime (Rime), follow zwp-text-input-v3 protocol.
