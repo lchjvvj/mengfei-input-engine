@@ -1,8 +1,9 @@
 [Unit]
 Description=GXDE Native Input Engine
 Documentation=man:gxde-input-engine(1)
-After=graphical-session.target wayland-session.target gxde-wlcom.service
-Requires=gxde-wlcom.service
+# 合成器 gxde-wlcom 不由 systemd 管理（不存在对应单元）：不声明 Requires；
+# 合成器未就绪或连接断开时引擎每 5 秒自动重连
+After=graphical-session.target wayland-session.target
 
 [Service]
 Type=dbus

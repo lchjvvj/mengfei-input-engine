@@ -19,7 +19,7 @@ class SettingsPanel;
 //   SetCursorRect / ShowSettings
 // 出站（信号广播）：
 //   PreeditChanged / CandidateListChanged / CommitText / PageInfoChanged
-// 服务名与 debian/gxde-input-engine.service 的 BusName=org.gxde.InputEngine
+// 服务名与 debian/gxde-input-engine.user.service 的 BusName=org.gxde.InputEngine
 // 保持一致（session bus，systemd user 服务）；接口经标准 DBus 内省
 //（org.freedesktop.DBus.Introspectable）发现，不再随包安装 XML 描述文件。
 class GXDEDBusAdapter : public QObject
