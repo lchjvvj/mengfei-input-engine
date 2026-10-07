@@ -9,15 +9,19 @@ class GXDEPinyinEngine;
 class CandidateBar;
 class SettingsPanel;
 
-// DBus 双向通信适配层：gxde-wlcom 合成器与输入引擎之间的唯一通道
-// 入站（方法调用，合成器 -> 引擎）：
+// DBus 辅助通道适配层：主输入链路（激活/按键/文本回写）已由 GXDEWaylandIM
+// 走标准 zwp_input_method_v2 直连 gxde-wlcom（合成器侧没有本 DBus 接口的
+// 客户端代码），DBus 保留供控制中心等组件调用：打开设置面板（ShowSettings）、
+// 推送光标矩形（SetCursorRect/SetCursorPos）；Activate/Deactivate/Reset/
+// ProcessKeyEvent 作为兼容入口保留。
+// 入站（方法调用）：
 //   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos /
 //   SetCursorRect / ShowSettings
-// 出站（信号广播，引擎 -> 合成器）：
+// 出站（信号广播）：
 //   PreeditChanged / CandidateListChanged / CommitText / PageInfoChanged
 // 服务名与 debian/gxde-input-engine.service 的 BusName=org.gxde.InputEngine
-// 保持一致（session bus，systemd user 服务）；接口描述见
-// protocol/org.gxde.InputEngine.xml，gxde-wlcom 侧可用 qdbusxml2cpp 生成代理。
+// 保持一致（session bus，systemd user 服务）；接口经标准 DBus 内省
+//（org.freedesktop.DBus.Introspectable）发现，不再随包安装 XML 描述文件。
 class GXDEDBusAdapter : public QObject
 {
     Q_OBJECT
