@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include <QByteArray>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -43,6 +44,14 @@ public:
 
     // 按键事件入口，从合成器接收按键
     bool handleKeyEvent(uint32_t keycode, bool pressed);
+
+    // Wayland 输入法客户端（GXDEWaylandIM）对接：同步合成器下发的
+    // 键盘布局与修饰键状态，保证 keysym 解析和合成器/应用一致；
+    // keyRepeats 供 Wayland 端按 xkb 语义实现按键自动重复
+    bool loadKeymap(const QByteArray &keymapString);
+    void updateModifiers(uint32_t depressedMods, uint32_t latchedMods,
+                         uint32_t lockedMods, uint32_t group);
+    bool keyRepeats(uint32_t keycode) const;
 
     // 提交文本给应用
     void commitString(const QString &str);

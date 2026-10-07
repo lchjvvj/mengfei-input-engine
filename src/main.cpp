@@ -5,6 +5,7 @@
 #include "gxdeinputcore.h"
 #include "gxdepinyinengine.h"
 #include "gxdesettings.h"
+#include "gxdewaylandim.h"
 #include "ui/CandidateBar.hpp"
 #include "ui/SettingsPanel.hpp"
 
@@ -31,6 +32,14 @@ int main(int argc, char *argv[])
         qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
         return -1;
     }
+
+    // 标准 Wayland 输入法通道：zwp_input_method_v2 客户端直连 gxde-wlcom。
+    // activate/deactivate 驱动输入上下文，grab_keyboard 的按键进入
+    // core.handleKeyEvent，未消费按键经 zwp_virtual_keyboard_v1 转发给
+    // 焦点应用，preedit/上屏文本经 commit(serial) 写回合成器；
+    // 连接失败或断开时每 5 秒自动重连
+    GXDEWaylandIM waylandIM(&core, &pinyin);
+    waylandIM.start();
 
     // 信号槽绑定：拼音引擎 <-> UI
     QObject::connect(&pinyin, &GXDEPinyinEngine::preeditUpdate, &ui, &CandidateBar::updatePreedit);
