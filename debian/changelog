@@ -1,3 +1,11 @@
+gxde-input-engine (0.1.0) unstable; urgency=low
+
+  * 新增输入法设置面板
+  * 实现Shift切换中英文，英文模式直接上屏字母
+  * 输入法候选窗口跟随光标（Wayland text-input-v3 坐标传递）
+
+-- gfc <ffgcc45@qq.com>  Wed, 07 Oct 2026 10:37:00 +0800
+
 gxde-input-engine (0.0.7) unstable; urgency=low
 
   * 接入 librime（Rime 中州韵）替换写死的 QMap 简易词库：GXDEPinyinEngine
