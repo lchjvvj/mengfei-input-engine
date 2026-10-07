@@ -169,11 +169,6 @@ GXDEPinyinEngine::~GXDEPinyinEngine()
     delete d;
 }
 
-void GXDEPinyinEngine::appendChar(char ch)
-{
-    sendKey(static_cast<unsigned char>(ch));
-}
-
 void GXDEPinyinEngine::backspace()
 {
     sendKey(XKB_KEY_BackSpace);
@@ -184,6 +179,25 @@ void GXDEPinyinEngine::clear()
     if (d->api && d->session != 0)
         d->api->clear_composition(d->session);
     syncState();
+}
+
+bool GXDEPinyinEngine::isComposing() const
+{
+    // 组字中：Rime 上下文里有预编辑串或候选词
+    return !d->preedit.isEmpty() || !d->candidates.isEmpty();
+}
+
+bool GXDEPinyinEngine::processKey(int keysym)
+{
+    if (!d->api || d->session == 0)
+        return false;
+    // librime 是"按键是否被输入法消费"的权威：字母进组字、标点转全角
+    // 上屏、组字中空格选词、Enter 上屏原始输入均返回已处理；
+    // Enter/Tab/Esc/方向键等在无组字时返回未处理，调用方透传给应用
+    if (d->api->process_key(d->session, keysym, 0) == 0)
+        return false;
+    syncState();
+    return true;
 }
 
 bool GXDEPinyinEngine::selectCandidate(int idx)

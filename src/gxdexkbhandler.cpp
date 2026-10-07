@@ -4,6 +4,7 @@
 
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
+#include <xkbcommon/xkbcommon-names.h>
 
 // xkbcommon 约定：xkb keycode = evdev keycode + 8
 static const uint32_t kEvdevToXkbOffset = 8;
@@ -12,7 +13,7 @@ GXDEXkbHandler::GXDEXkbHandler()
 {
     m_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (!m_context) {
-        qWarning() << "[GXDEXkb] 创建 xkb_context 失败，回退硬编码键码表";
+        qWarning() << "[GXDEXkb] 创建 xkb_context 失败，按键将直接透传给应用";
         return;
     }
     // 默认按系统配置加载 keymap（RMLVO 全部留空即取默认值）
@@ -124,23 +125,20 @@ bool GXDEXkbHandler::keyRepeats(uint32_t evdevKeycode) const
     return xkb_keymap_key_repeats(m_keymap, keycode) != 0;
 }
 
-QString GXDEXkbHandler::textFromKeysym(uint32_t keysym)
+bool GXDEXkbHandler::commandModifierActive() const
 {
-    if (keysym == XKB_KEY_NoSymbol)
-        return QString();
+    if (!isValid())
+        return false;
 
-    char buf[64] = {0};
-    const int len = xkb_keysym_to_utf8(static_cast<xkb_keysym_t>(keysym), buf, sizeof(buf));
-    if (len <= 0)
-        return QString();
-
-    // 不同 xkbcommon 版本对返回值的定义不同（是否含结尾 NUL），
-    // 统一按 NUL 截断取串（buf 已零初始化，xkb 保证写入 NUL 结尾）
-    const QString text = QString::fromUtf8(buf);
-    // 过滤控制字符（Enter/Tab 等），只保留可打印文本
-    if (text.isEmpty() || text.at(0).category() == QChar::Other_Control)
-        return QString();
-    return text;
+    // 修饰键名按 keymap 的标准命名查询：Ctrl / Alt(Mod1) / Super(Mod4)
+    static const char *const kCommandMods[] = {
+        XKB_MOD_NAME_CTRL, XKB_MOD_NAME_ALT, XKB_MOD_NAME_LOGO,
+    };
+    for (const char *name : kCommandMods) {
+        if (xkb_state_mod_name_is_active(m_state, name, XKB_STATE_MODS_EFFECTIVE) > 0)
+            return true;
+    }
+    return false;
 }
 
 void GXDEXkbHandler::updateMask(uint32_t depressedMods, uint32_t latchedMods,
