@@ -25,8 +25,10 @@ int main(int argc, char *argv[])
     CandidateBar ui(&settings);
     SettingsPanel settingsPanel(&settings);
 
-    // DBus双向通信：gxde-wlcom 方法调用驱动引擎（激活/按键/光标坐标/打开设置面板），
-    // 引擎信号回传 preedit/候选/上屏文本给合成器
+    // DBus 辅助通道：主输入链路（激活/按键/文本回写）走 zwp_input_method_v2
+    //（见下方 GXDEWaylandIM），DBus 供控制中心等组件调用：打开设置面板、
+    // 推送光标矩形，并保留 Activate/ProcessKeyEvent 兼容入口；
+    // 出站信号广播 preedit/候选/上屏文本
     GXDEDBusAdapter dbusAdapter(&core, &pinyin, &ui, &settingsPanel);
     if (!dbusAdapter.registerService()) {
         qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
@@ -95,8 +97,9 @@ int main(int argc, char *argv[])
     // SetCursorRect/SetCursorPos 推送，候选栏跟随光标定位
     QObject::connect(&core, &GXDEInputCore::cursorRectChanged, &ui, &CandidateBar::setCursorRect);
 
-    // 输入上下文激活与光标坐标不再本地模拟，
-    // 由 gxde-wlcom 通过 DBus 调用 Activate / SetCursorRect 驱动
+    // 输入上下文激活不再本地模拟：由合成器经 zwp_input_method_v2 的
+    // activate/deactivate 事件驱动（GXDEWaylandIM）；光标坐标由 gxde-wlcom
+    // 经 DBus SetCursorRect 推送
 
     qDebug() << "GXDE Input Engine with CandidateBar UI running...";
     return app.exec();
