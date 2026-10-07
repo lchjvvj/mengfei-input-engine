@@ -3,6 +3,13 @@ gxde-input-engine (0.1.0) unstable; urgency=low
   * 新增输入法设置面板
   * 实现Shift切换中英文，英文模式直接上屏字母
   * 输入法候选窗口跟随光标（Wayland text-input-v3 坐标传递）
+  * 合成器对接：引擎作为 zwp_input_method_v2 客户端直连 gxde-wlcom
+    （input-method-unstable-v2 + virtual-keyboard-unstable-v1，协议 XML 与
+    合成器内嵌 wlroots 一致）：grab_keyboard 独占按键抓取，未消费按键与
+    修饰键经虚拟键盘转发回焦点应用，按 repeat_info 补齐按键自动重复，
+    preedit/上屏文本经 commit(serial) 写回；合成器 keymap/modifiers 同步
+    到 xkbcommon；连接失败或断开每 5 秒自动重连；DBus 通道保留
+    （设置面板/光标矩形仍走 org.gxde.InputEngine）
 
 -- gfc <ffgcc45@qq.com>  Wed, 07 Oct 2026 10:37:00 +0800
 

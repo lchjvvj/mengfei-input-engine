@@ -3,18 +3,12 @@
 #include <QDebug>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
-// 前置声明 Wayland 协议类型，真实项目由 wayland-scanner 从
-// protocol/zwp-text-input-v3.xml 生成完整定义
-struct zwp_text_input_v3;
-struct wl_display;
-
 class GXDEInputCore::Private
 {
 public:
-    // 简化：真实项目需要wayland协议生成的struct与回调
-    zwp_text_input_v3 *textInput = nullptr;
-    wl_display *display = nullptr;
-    // xkbcommon 键码解析：raw keycode -> keysym，兼容不同键盘布局
+    // xkbcommon 键码解析：raw keycode -> keysym，兼容不同键盘布局。
+    // Wayland 协议对接由 GXDEWaylandIM 完成，经 loadKeymap/updateModifiers
+    // 把合成器的键盘布局与修饰键状态同步到这里
     GXDEXkbHandler xkb;
 };
 
@@ -188,13 +182,30 @@ bool GXDEInputCore::isShiftKey(uint32_t keycode) const
     return keycode == 42 || keycode == 54;
 }
 
+bool GXDEInputCore::loadKeymap(const QByteArray &keymapString)
+{
+    return d->xkb.loadKeymapFromString(keymapString);
+}
+
+void GXDEInputCore::updateModifiers(uint32_t depressedMods, uint32_t latchedMods,
+                                    uint32_t lockedMods, uint32_t group)
+{
+    d->xkb.updateMask(depressedMods, latchedMods, lockedMods, group);
+}
+
+bool GXDEInputCore::keyRepeats(uint32_t keycode) const
+{
+    return d->xkb.keyRepeats(keycode);
+}
+
 void GXDEInputCore::commitString(const QString &str)
 {
     if (str.isEmpty()) return;
     m_ctx.commitText = str;
     emit textCommitted(str);
     qDebug() << "[GXDEInput] Commit:" << str;
-    // 实际：调用 zwp_text_input_v3_commit_string(d->textInput, str.toUtf8().constData());
+    // 出站链路：textCommitted 由 GXDEWaylandIM（zwp_input_method_v2
+    // commit_string + commit）与 DBus 适配器（CommitText 信号）分别消费
 }
 
 void GXDEInputCore::setPreedit(const QString &text, int cursor)

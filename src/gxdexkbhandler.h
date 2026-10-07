@@ -3,17 +3,18 @@
 
 #include <cstdint>
 
+#include <QByteArray>
 #include <QString>
 
 struct xkb_context;
 struct xkb_keymap;
 struct xkb_state;
 
-// xkbcommon 键码解析封装（骨架）
+// xkbcommon 键码解析封装
 // 职责：把合成器传来的 raw evdev keycode 解析成 keysym/可打印文本，
 // 兼容不同键盘布局，替代 GXDEInputCore 中的硬编码键码表。
-// 完整实现还需：接收 Wayland keyboard 的 modifier 事件调用 updateMask，
-// 以及在合成器 keymap 变更时调用 reloadKeymap 热重载布局。
+// Wayland 接入后由 GXDEWaylandIM 调用：keymap 事件走 loadKeymapFromString
+// 同步合成器布局，modifiers 事件走 updateMask 同步修饰键状态。
 class GXDEXkbHandler
 {
 public:
@@ -32,14 +33,24 @@ public:
                       const QString &layout, const QString &variant,
                       const QString &options);
 
+    // 从合成器下发的 keymap 字符串（Wayland keymap 事件的完整内容，
+    // 含结尾 NUL）直接加载，替换 RMLVO 默认布局，
+    // 保证 keysym 解析与合成器/应用的键盘布局一致
+    bool loadKeymapFromString(const QByteArray &keymapString);
+
     // evdev raw keycode -> keysym（XKB_KEY_*），失败返回 XKB_KEY_NoSymbol
     uint32_t keysymFromKeycode(uint32_t evdevKeycode) const;
+
+    // 按键是否参与自动重复（xkb repeat 语义，与合成器 wl_keyboard 行为一致），
+    // 供 Wayland 输入法端实现按键重复
+    bool keyRepeats(uint32_t evdevKeycode) const;
 
     // keysym -> UTF-8 文本；不可打印（功能键/控制键）返回空串
     static QString textFromKeysym(uint32_t keysym);
 
-    // TODO: 收到 Wayland wl_keyboard.modifiers 事件后调用，
-    // 同步 shift/ctrl/capslock 等状态，保证 keysym 解析结果正确
+    // 同步修饰键状态：收到 Wayland 键盘抓取的 modifiers 事件后
+    // 由 GXDEWaylandIM 经 GXDEInputCore::updateModifiers 调用，
+    // 保证 shift/ctrl/capslock 等组合键的 keysym 解析正确
     void updateMask(uint32_t depressedMods, uint32_t latchedMods,
                     uint32_t lockedMods, uint32_t group);
 

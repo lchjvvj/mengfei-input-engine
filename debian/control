@@ -11,4 +11,5 @@ Architecture: amd64 arm64
 Depends: librime-data, rime-data-luna-pinyin, ${shlibs:Depends}, ${misc:Depends}
 Description: GXDE Native Wayland Input Engine
  Native input engine for GXDE OS, works with gxde-wlcom / FlakeWM / Treeland.
- Pinyin engine powered by librime (Rime), follow zwp-text-input-v3 protocol.
+ Pinyin engine powered by librime (Rime), integrates with the compositor via
+ zwp_input_method_v2 (applications keep using zwp-text-input-v3).
