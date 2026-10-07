@@ -1,10 +1,10 @@
-1. 按键转发：gxde-wlcom需要把按键事件转发给输入引擎，合成器侧需要增加事件分发代码
+1. 按键转发：已解决——引擎通过标准 zwp_input_method_v2 协议直连 gxde-wlcom，grab_keyboard 独占按键抓取获得键盘事件，未消费按键经 zwp_virtual_keyboard_v1 转发回焦点应用，合成器侧无需再增加事件分发代码
 ​
-2. 光标坐标同步：候选栏跟随光标，wayland协议获取光标位置需要合成器支持
+2. 光标坐标同步：候选栏跟随光标，wayland协议获取光标位置需要合成器支持（当前仍走 DBus SetCursorRect 推送；input-method-v2 的 popup_surface 机制需要 Qt Wayland 私有 API，暂未启用）
 ​
 3. 多surface多窗口，多个输入上下文切换，容易出现候选栏残留
 ​
-4. 键码映射：当前是硬编码键码，生产环境需要使用  xkbcommon  将 raw keycode 转成 keysym，兼容不同键盘布局。
+4. 键码映射：已解决——xkbcommon 将 raw keycode 解析为 keysym，且引擎加载合成器下发的同一份 keymap 并同步 modifiers 状态，兼容不同键盘布局
 ​
 5. 页码文字：可以传入总候选数、当前偏移，在UI上显示  1/2  这种页码。
 ​

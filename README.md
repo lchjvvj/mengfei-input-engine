@@ -11,12 +11,12 @@
 
 #### 语言
 
-C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-input-v3（现代Wayland输入标准）和org.gxde.InputEngine (gxwm协议)，拼音词库与候选计算由 librime（Rime 中州韵）提供
+C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器（应用侧仍走 text-input-v3，由合成器桥接）；同时保留 org.gxde.InputEngine (gxwm协议) DBus 通道，供控制中心打开设置面板与推送光标矩形，拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
 
-1. 原生对接  gxde-wlcom ，复用合成器的 text-input-v3
+1. 原生对接  gxde-wlcom ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用
 ​
 2. 可选两种模式：独立内置引擎 / 作为fcitx5前端代理
 ​
@@ -83,19 +83,19 @@ journalctl --user -u gxde-input-engine.service -f
 1. gxde-wlcom 合成器启动
 
 ​
-2.  gxde-input-engine  作为独立后台进程启动（systemd/user 服务）
+2.  gxde-input-engine  作为独立后台进程启动（systemd/user 服务），通过 wl_display_connect 直连合成器并注册为 zwp_input_method_v2 输入法（合成器未就绪时每 5 秒自动重试）
 
 ​
-3. 用户点击输入框 → gxde-wlcom发送 text_input enter 事件
+3. 用户点击输入框 → 应用经 text-input-v3 请求激活 → gxde-wlcom 向引擎发送 activate 事件，引擎 grab_keyboard 取得独占按键抓取
 
 ​
-4. 引擎激活，监听键盘事件（从gxde-wlcom接收按键）
+4. 按键由合成器路由给引擎：参与组字的按键被引擎消费，其余按键经虚拟键盘转发回应用；按键自动重复与修饰键状态由引擎按 repeat_info/modifiers 事件补齐并转发
 
 ​
-5. 输入拼音 → 拼音引擎查询候选词，更新候选UI
+5. 输入拼音 → 拼音引擎查询候选词，更新候选UI，preedit 经 set_preedit_string + commit 实时写回应用
 
 ​
-6. 数字选择候选 → 提交汉字到Wayland应用（浏览器、GXDE控制中心等）
+6. 数字选择候选 → 汉字经 commit_string + commit 提交到Wayland应用（浏览器、GXDE控制中心等）
 
 
 

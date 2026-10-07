@@ -85,6 +85,45 @@ uint32_t GXDEXkbHandler::keysymFromKeycode(uint32_t evdevKeycode) const
     return static_cast<uint32_t>(xkb_state_key_get_one_sym(m_state, keycode));
 }
 
+bool GXDEXkbHandler::loadKeymapFromString(const QByteArray &keymapString)
+{
+    if (!m_context || keymapString.isEmpty())
+        return false;
+
+    // constData 保证 NUL 结尾：keymap 事件带来的字符串本身含结尾 NUL
+    xkb_keymap *keymap = xkb_keymap_new_from_string(m_context, keymapString.constData(),
+                                                    XKB_TEXT_FORMAT_V1,
+                                                    XKB_KEYMAP_COMPILE_NO_FLAGS);
+    if (!keymap) {
+        qWarning() << "[GXDEXkb] 解析合成器 keymap 失败";
+        return false;
+    }
+
+    xkb_state *state = xkb_state_new(keymap);
+    if (!state) {
+        xkb_keymap_unref(keymap);
+        qWarning() << "[GXDEXkb] 创建 xkb_state 失败";
+        return false;
+    }
+
+    // 整体替换旧 keymap/state（与 reloadKeymap 相同的热切换语义）
+    if (m_state) xkb_state_unref(m_state);
+    if (m_keymap) xkb_keymap_unref(m_keymap);
+    m_keymap = keymap;
+    m_state = state;
+    qDebug() << "[GXDEXkb] 合成器 keymap 已加载";
+    return true;
+}
+
+bool GXDEXkbHandler::keyRepeats(uint32_t evdevKeycode) const
+{
+    if (!isValid())
+        return false;
+
+    const xkb_keycode_t keycode = static_cast<xkb_keycode_t>(evdevKeycode) + kEvdevToXkbOffset;
+    return xkb_keymap_key_repeats(m_keymap, keycode) != 0;
+}
+
 QString GXDEXkbHandler::textFromKeysym(uint32_t keysym)
 {
     if (keysym == XKB_KEY_NoSymbol)
@@ -109,7 +148,7 @@ void GXDEXkbHandler::updateMask(uint32_t depressedMods, uint32_t latchedMods,
 {
     if (!isValid())
         return;
-    // TODO: 布局参数目前直接透传 group，接入 Wayland 后按协议事件填充
+    // 参数直接来自 Wayland 键盘抓取的 modifiers 事件（GXDEWaylandIM 转发）
     xkb_state_update_mask(m_state, depressedMods, latchedMods, lockedMods,
                           0, 0, group);
 }
