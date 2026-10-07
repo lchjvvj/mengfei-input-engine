@@ -104,5 +104,5 @@ journalctl --user -u gxde-input-engine.service -f
 1.  Fork 本仓库
 2.  新建分支
 3.  提交代码
-4.  合并到Fock仓库主分支
+4.  合并到Fock 仓库主分支
 5.  新建 Pull Request
