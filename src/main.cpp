@@ -82,9 +82,12 @@ int main(int argc, char *argv[])
     QObject::connect(&core, &GXDEInputCore::preeditChanged, &ui, &CandidateBar::updatePreedit);
     QObject::connect(&core, &GXDEInputCore::candidateListChanged, &ui, &CandidateBar::updateCandidates);
     QObject::connect(&core, &GXDEInputCore::textCommitted, &ui, &CandidateBar::hide);
+    // 光标矩形：text-input-v3 set_cursor_rectangle 由 gxde-wlcom 经 DBus
+    // SetCursorRect/SetCursorPos 推送，候选栏跟随光标定位
+    QObject::connect(&core, &GXDEInputCore::cursorRectChanged, &ui, &CandidateBar::setCursorRect);
 
     // 输入上下文激活与光标坐标不再本地模拟，
-    // 由 gxde-wlcom 通过 DBus 调用 Activate / SetCursorPos 驱动
+    // 由 gxde-wlcom 通过 DBus 调用 Activate / SetCursorRect 驱动
 
     qDebug() << "GXDE Input Engine with CandidateBar UI running...";
     return app.exec();

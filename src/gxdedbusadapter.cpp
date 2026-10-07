@@ -82,7 +82,13 @@ bool GXDEDBusAdapter::ProcessKeyEvent(uint keycode, bool pressed)
 
 void GXDEDBusAdapter::SetCursorPos(int x, int y)
 {
-    m_ui->setCursorPos(x, y);
+    // 点坐标按空矩形处理：候选栏回退默认行高偏移
+    m_core->setCursorRect(x, y, 0, 0);
+}
+
+void GXDEDBusAdapter::SetCursorRect(int x, int y, int width, int height)
+{
+    m_core->setCursorRect(x, y, width, height);
 }
 
 void GXDEDBusAdapter::ShowSettings()

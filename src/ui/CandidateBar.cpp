@@ -55,12 +55,16 @@ void CandidateBar::updatePageInfo(int currentPage, int totalPages)
     root->setProperty("totalPages", totalPages);
 }
 
-void CandidateBar::setCursorPos(qreal x, qreal y)
+void CandidateBar::setCursorRect(qreal x, qreal y, qreal width, qreal height)
 {
     QObject *root = m_view->rootObject();
     if (!root) return;
+    // 候选栏左对齐矩形左缘、宽度随内容自适应，width 不参与定位；
+    // height 决定纵向偏移（紧贴矩形下缘，空矩形时 QML 回退默认值）
+    Q_UNUSED(width)
     root->setProperty("cursorX", x);
     root->setProperty("cursorY", y);
+    root->setProperty("cursorHeight", height);
 }
 
 void CandidateBar::setDarkMode(bool dark)
