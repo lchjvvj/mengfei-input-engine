@@ -1,5 +1,1 @@
 计划中:
-实现DBus双向通信完整代码（gxde-wlcom调用input-engine，引擎回传preedit/candidate给合成器）已完成
-增加中英文切换逻辑，实现Shift切换中英文，英文模式直接上屏字母 已完成
-实现候选窗口跟随光标：新增 DBus SetCursorRect 接口传递 text-input-v3 光标矩形(x/y/width/height)，候选栏按矩形左下角定位并修复仅横向移动才跟随的问题 已完成
-实现合成器对接：引擎作为 zwp_input_method_v2 客户端直连 gxde-wlcom（grab_keyboard 独占按键抓取、zwp_virtual_keyboard_v1 转发未消费按键与修饰键、按 repeat_info 补齐按键自动重复、commit(serial) 写回 preedit/上屏文本），不再依赖合成器侧缺失的 DBus 按键转发代码 已完成
