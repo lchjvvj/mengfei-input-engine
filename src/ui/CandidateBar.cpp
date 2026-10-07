@@ -11,20 +11,20 @@ CandidateBar::CandidateBar(GXDESettings *settings, QObject *parent)
 {
     // 全局设置以 settingsCpp 注入 QML：主题与候选栏样式
     //（字号/间距/页码/高亮色）在 QML 内声明式绑定，改设置即生效。
+    // candidateBarCpp：QML 点击候选词回调 selectCandidate。
     // 上下文属性必须在 setSource 之前设置，否则绑定解析失败
     m_view->rootContext()->setContextProperty("settingsCpp", settings);
+    m_view->rootContext()->setContextProperty("candidateBarCpp", this);
+    // QML 根项为普通 Rectangle（QQuickView 不支持 Window 作根项）：
+    // 候选栏窗口的无边框/置顶/Tool flags 从 QML Window 移到这里设置
+    m_view->setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     m_view->setSource(QUrl("qrc:/ui/CandidateBar.qml"));
     m_view->setResizeMode(QQuickView::SizeViewToRootObject);
 
-    // 将当前C++对象暴露给QML，名称 candidateBarCpp
-    // 注意：QML 加载失败时（如以 Window 作根项，QQuickView 不支持）
-    // rootObject() 为 nullptr，判空降级，避免引擎启动即崩溃导致 DBus 服务无法注册
-    QObject *root = m_view->rootObject();
-    if (!root) {
+    // 与 SettingsPanel 相同的降级策略：QML 加载失败只告警，
+    // 不影响引擎主体与 DBus 服务注册
+    if (!m_view->rootObject())
         qWarning() << "[CandidateBar] QML 根对象加载失败，候选栏UI不可用:" << m_view->errors();
-        return;
-    }
-    root->setProperty("candidateBarCpp", QVariant::fromValue(this));
 }
 
 CandidateBar::~CandidateBar()
