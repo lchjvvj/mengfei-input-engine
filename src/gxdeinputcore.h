@@ -16,6 +16,12 @@ struct GXDEInputContext
     QString commitText;         // 确认提交的文字
     QStringList candidates;     // 候选词列表
     int selectedIndex = 0;
+    // set_cursor_rectangle 光标矩形（gxde-wlcom 换算后的全局坐标），
+    // 全 0 为空矩形：应用未上报光标区域，候选栏回退默认行高偏移
+    int cursorX = 0;
+    int cursorY = 0;
+    int cursorWidth = 0;
+    int cursorHeight = 0;
 };
 
 class GXDEInputCore : public QObject
@@ -42,6 +48,10 @@ public:
     void commitString(const QString &str);
     void setPreedit(const QString &text, int cursor);
     void setCandidates(const QStringList &words);
+    // text-input-v3 光标矩形：gxde-wlcom 把 set_cursor_rectangle 的
+    // surface 局部坐标换算为全局坐标后推送，候选栏跟随光标定位；
+    // width/height 为 0 表示空矩形（应用未上报光标区域）
+    void setCursorRect(int x, int y, int width, int height);
 
 signals:
     // 中英文模式切换
@@ -50,6 +60,8 @@ signals:
     void preeditChanged(const QString &text, int cursor);
     void candidateListChanged(const QStringList &list, int sel);
     void textCommitted(const QString &text);
+    // 光标矩形更新：驱动候选栏跟随定位
+    void cursorRectChanged(int x, int y, int width, int height);
     // 按键分发信号：普通字符键、方向键、翻页、数字选词、退格
     void keyRawEvent(uint32_t keycode);
     void keyCharacter(const QString &text); // xkbcommon 解析出的可打印文本
