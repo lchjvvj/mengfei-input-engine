@@ -11,7 +11,8 @@ class SettingsPanel;
 
 // DBus 双向通信适配层：gxde-wlcom 合成器与输入引擎之间的唯一通道
 // 入站（方法调用，合成器 -> 引擎）：
-//   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos / ShowSettings
+//   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos /
+//   SetCursorRect / ShowSettings
 // 出站（信号广播，引擎 -> 合成器）：
 //   PreeditChanged / CandidateListChanged / CommitText / PageInfoChanged
 // 服务名与 debian/gxde-input-engine.service 的 BusName=org.gxde.InputEngine
@@ -40,8 +41,12 @@ public slots:
     void Reset();
     // 按键转发：evdev raw keycode + 按下状态，返回引擎是否消费该按键
     bool ProcessKeyEvent(uint keycode, bool pressed);
-    // 光标/输入框全局坐标，候选栏跟随定位（由 gxde-wlcom 实时推送）
+    // 光标/输入框全局坐标（点形式），候选栏跟随定位（由 gxde-wlcom 实时推送），
+    // 等价于空矩形的 SetCursorRect，候选栏回退默认行高偏移
     void SetCursorPos(int x, int y);
+    // text-input-v3 set_cursor_rectangle 光标矩形（gxde-wlcom 换算为全局坐标
+    // 后推送），候选栏紧贴矩形左下角定位，不遮挡光标行
+    void SetCursorRect(int x, int y, int width, int height);
     // 打开输入法设置面板（中英文切换、候选栏样式、主题配置），
     // 供 GXDE 控制中心/合成器调用；面板常驻隐藏，重复调用幂等
     void ShowSettings();

@@ -1,6 +1,6 @@
 1. GXDE主题联动：目前 darkMode 是手动设置；可接入GXDE主题守护进程 gxde-theme-daemon 监听主题变更，自动切换候选栏明暗色。
 ​
-2. 光标坐标来源：当前是模拟坐标；完整实现需要新增DBus接口，gxde-wlcom把输入框/光标坐标实时推送给 gxde-input-engine 。
+2. 光标坐标来源：gxde-wlcom 把 text-input-v3 set_cursor_rectangle 光标矩形（surface 局部坐标换算为全局坐标）通过 DBus SetCursorRect 接口实时推送给引擎，候选栏紧贴矩形左下角跟随定位，不遮挡光标行；应用未上报光标区域（空矩形）时回退默认行高偏移，SetCursorPos 为点形式兼容入口。
 ​
 3. 屏幕边界避让：QML已经写了基础避让逻辑，防止候选栏跑到屏幕外。
 ​

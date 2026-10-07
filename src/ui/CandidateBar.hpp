@@ -20,7 +20,9 @@ public:
     void updatePreedit(const QString &text);
     void updateCandidates(const QStringList &list, int selIdx);
     void updatePageInfo(int currentPage, int totalPages);
-    void setCursorPos(qreal x, qreal y);
+    // text-input-v3 光标矩形（全局坐标）：候选栏紧贴矩形左下角定位，
+    // width/height 为 0 表示空矩形，QML 回退默认行高偏移
+    void setCursorRect(qreal x, qreal y, qreal width, qreal height);
     // 深色主题切换入口：统一写入 GXDESettings，QML 绑定自动更新配色
     //（后续接入 gxde-theme-daemon 主题联动时调用此接口即可）
     void setDarkMode(bool dark);

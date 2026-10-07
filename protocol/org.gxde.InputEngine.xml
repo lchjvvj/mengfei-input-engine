@@ -20,10 +20,20 @@
       <arg type="b" name="pressed" direction="in"/>
       <arg type="b" name="consumed" direction="out"/>
     </method>
-    <!-- 光标/输入框全局坐标，候选栏跟随定位 -->
+    <!-- 光标/输入框全局坐标（点形式，等价于空矩形的 SetCursorRect），候选栏跟随定位 -->
     <method name="SetCursorPos">
       <arg type="i" name="x" direction="in"/>
       <arg type="i" name="y" direction="in"/>
+    </method>
+    <!-- text-input-v3 光标矩形：gxde-wlcom 收到应用 set_cursor_rectangle 后
+         把 surface 局部坐标换算为全局坐标实时推送，参数与协议一一对应；
+         候选栏紧贴矩形左下角定位，不遮挡光标行。width/height 为 0 表示
+         空矩形（应用未上报光标区域），引擎回退默认行高偏移 -->
+    <method name="SetCursorRect">
+      <arg type="i" name="x" direction="in"/>
+      <arg type="i" name="y" direction="in"/>
+      <arg type="i" name="width" direction="in"/>
+      <arg type="i" name="height" direction="in"/>
     </method>
     <!-- 打开输入法设置面板（中英文切换、候选栏样式、主题配置） -->
     <method name="ShowSettings"/>
