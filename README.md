@@ -2,11 +2,11 @@
 
 #### 介绍
 
-**GXDE输入引擎**（Wayland，适配 gxde-wlcom / FlakeWM ）
+**GXDE输入引擎**（Wayland，适配 gxde-wlcom）
 
 #### 定位
 
-独立输入法框架后端，对接 Wayland 合成器（gxde-wlcom），兼容 fcitx5 协议，同时内置基于 librime（Rime 中州韵）的拼音输入引擎，支持中文/英文切换、候选栏、预编辑文本，可集成到GXDE桌面。
+独立输入法框架后端，对接 Wayland 合成器（gxde-wlcom），内置基于 librime（Rime 中州韵）的拼音输入引擎，支持中文/英文切换、候选栏、预编辑文本，可集成到GXDE桌面。
 
 
 #### 语言
