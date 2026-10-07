@@ -1,6 +1,7 @@
 #include "gxdeinputcore.h"
 #include "gxdexkbhandler.h"
 #include <QDebug>
+#include <utility>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 class GXDEInputCore::Private
@@ -103,72 +104,115 @@ bool GXDEInputCore::handleKeyEvent(uint32_t keycode, bool pressed)
 
     // 优先使用 xkbcommon 解析 keysym（兼容不同键盘布局）
     if (d->xkb.isValid())
-        return dispatchKeysym(d->xkb.keysymFromKeycode(keycode), keycode);
+        return dispatchKeysym(d->xkb.keysymFromKeycode(keycode));
 
-    // 回退：旧的硬编码键码表，仅在 xkbcommon 初始化失败时使用
-    switch(keycode)
-    {
-        case 106: // Down
-            emit keyDown();
-            return true;
-        case 103: // Up
-            emit keyUp();
-            return true;
-        case 104: // PageUp
-            emit keyPageUp();
-            return true;
-        case 109: // PageDown
-            emit keyPageDown();
-            return true;
-        case 2: case 3: case 4: case 5: case 6:
-        case 7: case 8: case 9: case 10: // 主键盘1~9
-            emit keyNumber(keycode - 2);
-            return true;
-        default:
-            // 普通字符，传给拼音引擎
-            emit keyRawEvent(keycode);
-            return true;
-    }
+    // xkbcommon 不可用：无法解析按键语义，一律透传（构造 GXDEXkbHandler
+    // 时已告警）。中文输入不可用，但按键不会被输入法吞掉
+    return false;
 }
 
-bool GXDEInputCore::dispatchKeysym(uint32_t keysym, uint32_t rawKeycode)
+bool GXDEInputCore::dispatchKeysym(uint32_t keysym)
 {
+    // 空键位/未映射键解析不出 keysym：透传，消费掉就等于销毁按键
+    if (keysym == XKB_KEY_NoSymbol)
+        return false;
+
+    // 修饰键自身与 Ctrl/Alt/Super 组合键一律透传：应用需要完整的
+    // 修饰键按下状态和 Ctrl+C、Alt+Tab 等快捷键，输入法不参与
+    if (isModifierKeysym(keysym) || d->xkb.commandModifierActive())
+        return false;
+
+    // 组字导航键：组字中是移动候选高亮、翻页与删字，消费；
+    // 无组字时透传，应用才能正常移动光标、翻页、退格
+    const bool composing = isComposing();
     switch (keysym) {
         case XKB_KEY_Up:
+            if (!composing)
+                return false;
             emit keyUp();
             return true;
         case XKB_KEY_Down:
+            if (!composing)
+                return false;
             emit keyDown();
             return true;
         case XKB_KEY_Page_Up:
+            if (!composing)
+                return false;
             emit keyPageUp();
             return true;
         case XKB_KEY_Page_Down:
+            if (!composing)
+                return false;
             emit keyPageDown();
             return true;
         case XKB_KEY_BackSpace:
+            if (!composing)
+                return false;
             emit keyBackspace();
             return true;
         default:
             break;
     }
 
-    // 主键盘数字1~9：选词，对应页内索引0~8
+    // 主键盘数字1~9：组字中为选词（对应页内索引0~8），
+    // 无组字时透传，应用才能正常输入数字
     if (keysym >= XKB_KEY_1 && keysym <= XKB_KEY_9) {
+        if (!composing)
+            return false;
         emit keyNumber(static_cast<int>(keysym - XKB_KEY_1));
         return true;
     }
 
-    // 可打印字符：xkbcommon 转成文本后交给拼音引擎
-    const QString text = GXDEXkbHandler::textFromKeysym(keysym);
-    if (!text.isEmpty()) {
-        emit keyCharacter(text);
-        return true;
-    }
+    // 其余按键（字母、标点、空格、Enter、Tab、Esc、功能键等）交由拼音
+    // 引擎判定是否消费：librime 处理了就是输入法的行为（字母开始/继续
+    // 组字、标点转全角上屏、组字中空格选词、Enter 上屏原始输入），
+    // 未处理则透传给应用（无组字时的 Enter/Tab/Esc/空格/方向键等）。
+    // 引擎未绑定时同样透传
+    if (m_keysymProcessor)
+        return m_keysymProcessor(keysym);
+    return false;
+}
 
-    // 其余按键（功能键等）保持与旧逻辑一致，原样透传 raw keycode
-    emit keyRawEvent(rawKeycode);
-    return true;
+bool GXDEInputCore::isComposing() const
+{
+    return m_composingQuery ? m_composingQuery() : false;
+}
+
+bool GXDEInputCore::isModifierKeysym(uint32_t keysym)
+{
+    switch (keysym) {
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+        case XKB_KEY_Caps_Lock:
+        case XKB_KEY_Num_Lock:
+        case XKB_KEY_Scroll_Lock:
+        case XKB_KEY_Mode_switch:
+        case XKB_KEY_ISO_Level3_Shift:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void GXDEInputCore::setKeysymProcessor(KeysymProcessor processor)
+{
+    m_keysymProcessor = std::move(processor);
+}
+
+void GXDEInputCore::setComposingQuery(ComposingQuery query)
+{
+    m_composingQuery = std::move(query);
 }
 
 bool GXDEInputCore::isShiftKey(uint32_t keycode) const
