@@ -10,6 +10,19 @@ gxde-input-engine (0.1.0) unstable; urgency=low
     preedit/上屏文本经 commit(serial) 写回；合成器 keymap/modifiers 同步
     到 xkbcommon；连接失败或断开每 5 秒自动重连；DBus 通道保留
     （设置面板/光标矩形仍走 org.gxde.InputEngine）
+  * 打包修复：systemd 单元此前被同时安装为系统服务与用户服务——
+    debian/gxde-input-engine.service 会被 dh_installsystemd 自动装入
+    usr/lib/systemd/system/，并由 root 的 postinst enable/start（而引擎
+    注册在 session bus，系统服务的 Type=dbus 在系统总线等不到总线名，
+    且 Requires=gxde-wlcom.service 指向不存在的单元，启动必然失败），
+    debian/rules 又手工把同一单元装入 usr/lib/systemd/user/。现将单元
+    更名为 debian/gxde-input-engine.user.service，按 debhelper 标准
+    约定由 dh_installsystemduser 仅安装为用户实例服务
+    （usr/lib/systemd/user/），并加 --no-enable：安装时不做任何全局
+    启用/启动，仍由用户在会话内按 README 执行
+    systemctl --user enable --now gxde-input-engine.service 启用；
+    单元移除 Requires=gxde-wlcom.service 及 After= 中对它的引用
+    （合成器不由 systemd 管理，未就绪时引擎每 5 秒自动重连）
 
 -- gfc <ffgcc45@qq.com>  Wed, 07 Oct 2026 10:37:00 +0800
 
