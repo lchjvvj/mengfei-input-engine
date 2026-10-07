@@ -55,22 +55,23 @@ int main(int argc, char *argv[])
     // 页码更新：候选栏显示 1/2 形式的页码
     QObject::connect(&pinyin, &GXDEPinyinEngine::pageInfoUpdate, &ui, &CandidateBar::updatePageInfo);
 
-    // 信号绑定：方向键、翻页、数字选词
+    // 信号绑定：方向键、翻页、数字选词（仅组字中发出，无组字时按键透传给应用）
     QObject::connect(&core, &GXDEInputCore::keyUp, &pinyin, &GXDEPinyinEngine::selectPrev);
     QObject::connect(&core, &GXDEInputCore::keyDown, &pinyin, &GXDEPinyinEngine::selectNext);
     QObject::connect(&core, &GXDEInputCore::keyPageUp, &pinyin, &GXDEPinyinEngine::pageUp);
     QObject::connect(&core, &GXDEInputCore::keyPageDown, &pinyin, &GXDEPinyinEngine::pageDown);
     QObject::connect(&core, &GXDEInputCore::keyNumber, &pinyin, &GXDEPinyinEngine::selectCandidate);
-
-    // xkbcommon 解析出的按键：字符进拼音预编辑，退格删除末位字符
-    QObject::connect(&core, &GXDEInputCore::keyCharacter, &pinyin, [&pinyin](const QString &text){
-        for (const QChar &ch : text) {
-            const QChar lower = ch.toLower();
-            if (lower >= QLatin1Char('a') && lower <= QLatin1Char('z'))
-                pinyin.appendChar(lower.toLatin1());
-        }
-    });
     QObject::connect(&core, &GXDEInputCore::keyBackspace, &pinyin, &GXDEPinyinEngine::backspace);
+
+    // 中文模式的按键判定：字母、标点、空格、Enter、Tab、Esc、功能键等
+    // 交给 librime，由 Rime 决定是否消费（字母组字、标点转全角上屏、
+    // 组字中空格选词/Enter 上屏原始输入）；Rime 未消费的按键由
+    // GXDEWaylandIM 经虚拟键盘透传给焦点应用，不再被输入法吞掉。
+    // 组字状态用于判定方向键/翻页/退格/数字是选词操作还是应透传
+    core.setKeysymProcessor([&pinyin](uint32_t keysym) {
+        return pinyin.processKey(static_cast<int>(keysym));
+    });
+    core.setComposingQuery([&pinyin] { return pinyin.isComposing(); });
 
     // 中英文切换：设置面板开关与 Shift 单独敲击双向同步。
     // 英文模式下 handleKeyEvent 一律不消费，合成器把按键直接透传给应用，

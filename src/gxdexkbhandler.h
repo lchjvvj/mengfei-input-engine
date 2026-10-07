@@ -24,7 +24,8 @@ public:
     GXDEXkbHandler(const GXDEXkbHandler &) = delete;
     GXDEXkbHandler &operator=(const GXDEXkbHandler &) = delete;
 
-    // xkbcommon 是否初始化成功；失败时调用方应回退到硬编码键码表
+    // xkbcommon 是否初始化成功；失败时无法解析 keysym，调用方应把按键
+    // 原样透传给应用（消费掉解析不了的按键等于销毁按键）
     bool isValid() const;
 
     // 按 RMLVO 规则加载 keymap，参数为空表示使用系统默认；
@@ -45,8 +46,11 @@ public:
     // 供 Wayland 输入法端实现按键重复
     bool keyRepeats(uint32_t evdevKeycode) const;
 
-    // keysym -> UTF-8 文本；不可打印（功能键/控制键）返回空串
-    static QString textFromKeysym(uint32_t keysym);
+    // 命令修饰键（Ctrl/Alt/Super）是否处于按下状态：这类组合键是应用
+    // 快捷键（Ctrl+C、Alt+Tab 等），输入法必须原样透传，不参与组字。
+    // Shift/CapsLock/NumLock 不计入（大小写与中英文切换需要它们）；
+    // AltGr 通常是 Mod5，同样不计入（它用于输入第三层字符）
+    bool commandModifierActive() const;
 
     // 同步修饰键状态：收到 Wayland 键盘抓取的 modifiers 事件后
     // 由 GXDEWaylandIM 经 GXDEInputCore::updateModifiers 调用，
