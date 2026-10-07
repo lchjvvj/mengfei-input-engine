@@ -22,7 +22,7 @@ C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，支持  text-i
 ​
 3. 适配GXDE桌面环境，跟随GXDE主题（深色/浅色）
 ​
-4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署朙月拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/gxde-input-engine/rime/
+4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/gxde-input-engine/rime/
 
 #### 自动构建
 
@@ -104,4 +104,5 @@ journalctl --user -u gxde-input-engine.service -f
 1.  Fork 本仓库
 2.  新建分支
 3.  提交代码
-4.  新建 Pull Request
+4.  合并到Fock仓库主分支
+5.  新建 Pull Request
