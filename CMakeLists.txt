@@ -90,5 +90,3 @@ install(FILES protocol/zwp-text-input-v3.xml
               protocol/input-method-unstable-v2.xml
               protocol/virtual-keyboard-unstable-v1.xml
         DESTINATION share/wayland/protocols)
-# DBus 接口描述：gxde-wlcom 侧可用 qdbusxml2cpp 生成代理代码
-install(FILES protocol/org.gxde.InputEngine.xml DESTINATION share/dbus-1/interfaces)
