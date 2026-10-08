@@ -11,7 +11,7 @@
 
 #### 语言
 
-C++ + Qt6（GXDE 生态主流），使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器（应用侧仍走 text-input-v3，由合成器桥接）；同时保留 org.gxde.InputEngine (gxwm协议) DBus 通道，供控制中心打开设置面板与推送光标矩形，拼音词库与候选计算由 librime（Rime 中州韵）提供
+C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
