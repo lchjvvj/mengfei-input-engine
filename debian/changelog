@@ -1,3 +1,18 @@
+gxde-input-engine (0.1.1) unstable; urgency=low
+
+  * 修复编译错误：GXDEXkbHandler::loadKeymapFromString 调用
+    xkb_keymap_new_from_string 时误用了不存在的 XKB_TEXT_FORMAT_V1，
+    xkbcommon 的正确枚举值为 XKB_KEYMAP_FORMAT_TEXT_V1
+    （enum xkb_keymap_format）
+  * 修复编译错误：GXDEWaylandIM::Private::kSeatListener 初始化字段顺序
+    与 wl_seat_listener 结构体实际声明顺序不一致——Wayland 协议中
+    wl_seat 的 capabilities 事件先于 name 事件声明，生成的监听器结构体
+    字段顺序为 {capabilities, name}，此前误写为 {seatName,
+    seatCapabilities}，导致函数指针类型不匹配无法编译；现调整为
+    {seatCapabilities, seatName}
+
+ -- gfc <ffgcc45@qq.com>  Thu, 08 Oct 2026 10:00:00 +0800
+
 gxde-input-engine (0.1.0) unstable; urgency=low
 
   * 新增输入法设置面板

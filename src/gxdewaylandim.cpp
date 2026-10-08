@@ -148,8 +148,8 @@ const struct wl_registry_listener GXDEWaylandIM::Private::kRegistryListener = {
 };
 
 const struct wl_seat_listener GXDEWaylandIM::Private::kSeatListener = {
-    seatName,
     seatCapabilities,
+    seatName,
 };
 
 const struct zwp_input_method_v2_listener GXDEWaylandIM::Private::kInputMethodListener = {
