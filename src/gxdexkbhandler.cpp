@@ -93,7 +93,7 @@ bool GXDEXkbHandler::loadKeymapFromString(const QByteArray &keymapString)
 
     // constData 保证 NUL 结尾：keymap 事件带来的字符串本身含结尾 NUL
     xkb_keymap *keymap = xkb_keymap_new_from_string(m_context, keymapString.constData(),
-                                                    XKB_TEXT_FORMAT_V1,
+                                                    XKB_KEYMAP_FORMAT_TEXT_V1,
                                                     XKB_KEYMAP_COMPILE_NO_FLAGS);
     if (!keymap) {
         qWarning() << "[GXDEXkb] 解析合成器 keymap 失败";

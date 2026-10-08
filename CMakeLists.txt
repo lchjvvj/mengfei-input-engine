@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(gxde-input-engine VERSION 0.1.0 LANGUAGES C CXX)
+project(gxde-input-engine VERSION 0.1.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
