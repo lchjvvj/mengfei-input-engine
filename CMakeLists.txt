@@ -1,19 +1,26 @@
 cmake_minimum_required(VERSION 3.20)
-project(gxde-input-engine VERSION 0.1.1 LANGUAGES C CXX)
+project(gxde-input-engine VERSION 0.1.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui WaylandClient Quick QuickControls2)
-find_package(Wayland REQUIRED Client)
-# xkbcommon：raw keycode -> keysym 解析（键码映射骨架）
 find_package(PkgConfig REQUIRED)
+# libwayland-client：wayland-client 协议运行时库，引擎经 wl_display 直连
+# gxde-wlcom 使用 zwp_input_method_v2/zwp_virtual_keyboard_v1。
+# 探测方式与 wayland-scanner/xkbcommon/rime 统一：走 libwayland-dev 的
+# 标准开发接口 wayland-client.pc。此前 find_package(Wayland) 实际靠
+# qt6-base-dev 内部携带的 ECM find 模块（cmake/Qt6/3rdparty/
+# extra-cmake-modules）解析，属 Qt 自身构建的实现细节，不对第三方工程
+# 承诺可用（项目也未声明 extra-cmake-modules 构建依赖），不再依赖
+pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client)
+# xkbcommon：raw keycode -> keysym 解析（键码映射骨架）
 pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 # librime（Rime 中州韵）：拼音词库与候选引擎，替代内置 QMap 简易词库
 pkg_check_modules(RIME REQUIRED IMPORTED_TARGET rime)
 
 # wayland-scanner：从协议 XML 生成 C 绑定代码（libwayland-dev 提供）。
-# 注意：ECM 的 FindWayland.cmake 没有 Scanner 组件，直接从 pkg-config 取工具路径
+# 与 wayland-client 一致，直接从 pkg-config 取工具路径，不依赖 ECM
 pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
 if(NOT WAYLAND_SCANNER)
     find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
@@ -80,7 +87,7 @@ target_include_directories(gxde-input-engine PRIVATE ${WAYLAND_GEN_DIR})
 
 target_link_libraries(gxde-input-engine PRIVATE
     Qt6::Core Qt6::DBus Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
-    Wayland::Client
+    PkgConfig::WAYLAND_CLIENT
     PkgConfig::XKBCOMMON
     PkgConfig::RIME
 )
