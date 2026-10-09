@@ -1,3 +1,20 @@
+gxde-input-engine (0.1.2) unstable; urgency=low
+
+  * 构建：wayland-client 协议库探测改用 pkg-config（wayland-client.pc，
+    由 libwayland-dev 提供），替代 find_package(Wayland REQUIRED
+    Client)——后者实际依赖 qt6-base-dev 内部携带的 ECM find 模块
+    （cmake/Qt6/3rdparty/extra-cmake-modules/find-modules/
+    FindWayland.cmake）解析，属 Qt 自身构建的实现细节，不对第三方
+    工程承诺可用（不同发行版/Qt 安装形态可能不随包安装该模块，本项目
+    亦未声明 extra-cmake-modules 构建依赖）。现与 wayland-scanner、
+    xkbcommon、rime 一致统一走 pkg-config 标准开发接口，只依赖
+    Build-Depends 中既有的 libwayland-dev；链接目标由 Wayland::Client
+    改为 PkgConfig::WAYLAND_CLIENT。源码零改动：GXDEWaylandIM 一直
+    只使用 wayland-client C API 与 wayland-scanner 生成的协议代码。
+    二进制正确链接 libwayland-client.so.0
+
+ -- gfc <ffgcc45@qq.com>  Fri, 09 Oct 2026 17:53:00 +0800
+
 gxde-input-engine (0.1.1) unstable; urgency=low
 
   * 修复编译错误：GXDEXkbHandler::loadKeymapFromString 调用
