@@ -133,7 +133,7 @@ Rectangle {
                         onToggled: settingsCpp.showPageInfo = checked
                     }
 
-                    // 实时预览：与 CandidateBar.qml 相同的渲染规则，
+                    // 实时预览：与候选栏（CandidateBar 渲染器）相同的渲染规则，
                     // 拖动滑块/切换主题立即可见效果
                     Rectangle {
                         Layout.fillWidth: true

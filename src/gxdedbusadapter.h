@@ -2,26 +2,19 @@
 #define GXDEDBUSADAPTER_H
 
 #include <QObject>
-#include <QStringList>
 
-class GXDEInputCore;
-class GXDEPinyinEngine;
-class CandidateBar;
 class SettingsPanel;
 
-// DBus 辅助通道适配层：主输入链路（激活/按键/文本回写）已由 GXDEWaylandIM
-// 走标准 zwp_input_method_v2 直连 gxde-wlcom（合成器侧没有本 DBus 接口的
-// 客户端代码），DBus 保留供控制中心等组件调用：打开设置面板（ShowSettings）、
-// 推送光标矩形（SetCursorRect/SetCursorPos）；Activate/Deactivate/Reset/
-// ProcessKeyEvent 作为兼容入口保留。
-// 入站（方法调用）：
-//   Activate / Deactivate / Reset / ProcessKeyEvent / SetCursorPos /
-//   SetCursorRect / ShowSettings
-// 出站（信号广播）：
-//   PreeditChanged / CandidateListChanged / CommitText / PageInfoChanged
+// DBus 辅助通道：主输入链路（激活/按键/候选窗/文本回写）已全部由
+// GXDEWaylandIM 走标准 zwp_input_method_v2 直连 gxde-wlcom 完成
+//（候选窗经 zwp_input_popup_surface_v2 显示），旧的整套 DBus 按键协议
+//（Activate/Deactivate/Reset/ProcessKeyEvent/SetCursorPos/SetCursorRect
+// 与 PreeditChanged/CandidateListChanged/CommitText/PageInfoChanged
+// 出站信号）随之删除。这里仅保留 GXDE 控制中心等组件打开设置面板的
+// 管理入口（ShowSettings）。
 // 服务名与 debian/gxde-input-engine.user.service 的 BusName=org.gxde.InputEngine
-// 保持一致（session bus，systemd user 服务）；接口经标准 DBus 内省
-//（org.freedesktop.DBus.Introspectable）发现，不再随包安装 XML 描述文件。
+// 保持一致（session bus，systemd user 服务）；注册结果同时充当
+// 单实例守护（名字被占用说明已有引擎在运行）。
 class GXDEDBusAdapter : public QObject
 {
     Q_OBJECT
@@ -30,45 +23,17 @@ public:
     static constexpr const char *kServiceName = "org.gxde.InputEngine";
     static constexpr const char *kObjectPath = "/org/gxde/InputEngine";
 
-    explicit GXDEDBusAdapter(GXDEInputCore *core, GXDEPinyinEngine *pinyin,
-                             CandidateBar *ui, SettingsPanel *settingsPanel,
-                             QObject *parent = nullptr);
+    explicit GXDEDBusAdapter(SettingsPanel *settingsPanel, QObject *parent = nullptr);
 
     // 在 session bus 上注册对象与服务名；失败返回 false（总线不可用/名字被占用）
     bool registerService();
 
 public slots:
-    // 对应 text_input enter/leave：激活/关闭输入上下文
-    void Activate();
-    void Deactivate();
-    // 对应 text_input reset：清空预编辑与候选，保持上下文激活
-    void Reset();
-    // 按键转发：evdev raw keycode + 按下状态，返回引擎是否消费该按键
-    bool ProcessKeyEvent(uint keycode, bool pressed);
-    // 光标/输入框全局坐标（点形式），候选栏跟随定位（由 gxde-wlcom 实时推送），
-    // 等价于空矩形的 SetCursorRect，候选栏回退默认行高偏移
-    void SetCursorPos(int x, int y);
-    // text-input-v3 set_cursor_rectangle 光标矩形（gxde-wlcom 换算为全局坐标
-    // 后推送），候选栏紧贴矩形左下角定位，不遮挡光标行
-    void SetCursorRect(int x, int y, int width, int height);
     // 打开输入法设置面板（中英文切换、候选栏样式、主题配置），
     // 供 GXDE 控制中心/合成器调用；面板常驻隐藏，重复调用幂等
     void ShowSettings();
 
-signals:
-    // 预编辑文本更新，cursor 为光标位置（当前实现固定在文本末尾）
-    void PreeditChanged(const QString &text, int cursor);
-    // 当前页候选词列表与选中索引
-    void CandidateListChanged(const QStringList &candidates, int selected);
-    // 上屏文本：合成器收到后通过 zwp_text_input_v3.commit_string 提交给应用
-    void CommitText(const QString &text);
-    // 页码信息（1 起始，无候选时均为 0）
-    void PageInfoChanged(int currentPage, int totalPages);
-
 private:
-    GXDEInputCore *m_core;
-    GXDEPinyinEngine *m_pinyin;
-    CandidateBar *m_ui;
     SettingsPanel *m_settingsPanel;
 };
 

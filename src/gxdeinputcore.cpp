@@ -34,12 +34,6 @@ void GXDEInputCore::deactivateContext()
     m_ctx.active = false;
     m_ctx.preeditText.clear();
     m_ctx.candidates.clear();
-    // 光标矩形随上下文清空（text-input-v3：矩形仅在两次 commit 的
-    // enable/disable 之间有效，失活后回到空矩形初始状态）
-    m_ctx.cursorX = 0;
-    m_ctx.cursorY = 0;
-    m_ctx.cursorWidth = 0;
-    m_ctx.cursorHeight = 0;
     // 失活时丢弃未完成的 Shift 敲击跟踪，避免下次激活误触发切换
     m_shiftHeld = false;
     m_shiftAlone = false;
@@ -248,8 +242,8 @@ void GXDEInputCore::commitString(const QString &str)
     m_ctx.commitText = str;
     emit textCommitted(str);
     qDebug() << "[GXDEInput] Commit:" << str;
-    // 出站链路：textCommitted 由 GXDEWaylandIM（zwp_input_method_v2
-    // commit_string + commit）与 DBus 适配器（CommitText 信号）分别消费
+    // 出站链路：textCommitted 由 GXDEWaylandIM 消费，经
+    // zwp_input_method_v2 commit_string + commit 写回合成器
 }
 
 void GXDEInputCore::setPreedit(const QString &text, int cursor)
@@ -263,13 +257,4 @@ void GXDEInputCore::setCandidates(const QStringList &words)
 {
     m_ctx.candidates = words;
     emit candidateListChanged(words, m_ctx.selectedIndex);
-}
-
-void GXDEInputCore::setCursorRect(int x, int y, int width, int height)
-{
-    m_ctx.cursorX = x;
-    m_ctx.cursorY = y;
-    m_ctx.cursorWidth = width;
-    m_ctx.cursorHeight = height;
-    emit cursorRectChanged(x, y, width, height);
 }

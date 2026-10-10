@@ -1,3 +1,28 @@
+gxde-input-engine (0.2.0) unstable; urgency=low
+
+  * 候选窗改为标准 zwp_input_popup_surface_v2 显示：GXDEWaylandIM 在
+    既有 zwp_input_method_v2 直连上增绑 wl_compositor/wl_shm/wl_output，
+    用 get_input_popup_surface 给专用 wl_surface 赋 input_popup 角色；
+    合成器负责把候选窗贴着 text-input-v3 set_cursor_rectangle 上报的
+    文本输入矩形放置（含屏幕边界避让）并只在输入法激活时显示。
+    CandidateBar 由 QQuickView/QML 窗口改为 QPainter 渲染器：按原
+    CandidateBar.qml 相同规则（留白/间距/配色/页码）绘制 preedit 与
+    候选词到 QImage，帧经 memfd + wl_shm 缓冲 attach/commit 到
+    popup surface，渲染缩放跟随 popup 所在输出的 wl_output scale
+    （set_buffer_scale，HiDPI 清晰）。删除 CandidateBar.qml 与引擎侧
+    坐标定位逻辑；popup surface 按协议不接收指针事件，鼠标点击选词
+    不再可用，选词走数字键/方向键/翻页键
+  * 删除整套 DBus 按键协议：主输入链路（激活/按键/候选窗/文本回写）
+    全部经标准 Wayland 协议直连 gxde-wlcom，无需修改合成器。
+    GXDEDBusAdapter 移除 Activate/Deactivate/Reset/ProcessKeyEvent/
+    SetCursorPos/SetCursorRect 入站方法与 PreeditChanged/
+    CandidateListChanged/CommitText/PageInfoChanged 出站信号，仅保留
+    ShowSettings 管理入口（服务注册继续充当单实例守护）；
+    GXDEInputCore 同步移除光标矩形链路（setCursorRect/
+    cursorRectChanged 与上下文字段）
+
+ -- gfc <ffgcc45@qq.com>  Sat, 10 Oct 2026 12:00:00 +0800
+
 gxde-input-engine (0.1.2) unstable; urgency=low
 
   * 构建：wayland-client 协议库探测改用 pkg-config（wayland-client.pc，

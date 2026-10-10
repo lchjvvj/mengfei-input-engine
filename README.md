@@ -11,12 +11,12 @@
 
 #### 语言
 
-C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
+C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器，候选窗经 zwp_input_popup_surface_v2 显示（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
 
-1. 原生对接  gxde-wlcom ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用
+1. 原生对接  gxde-wlcom ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用，候选窗经 zwp_input_popup_surface_v2 由合成器放置在焦点文本输入区域附近
 ​
 2. 可选两种模式：独立内置引擎 / 作为fcitx5前端代理
 ​
@@ -92,7 +92,7 @@ journalctl --user -u gxde-input-engine.service -f
 4. 按键由合成器路由给引擎：参与组字的按键被引擎消费，其余按键经虚拟键盘转发回应用；按键自动重复与修饰键状态由引擎按 repeat_info/modifiers 事件补齐并转发
 
 ​
-5. 输入拼音 → 拼音引擎查询候选词，更新候选UI，preedit 经 set_preedit_string + commit 实时写回应用
+5. 输入拼音 → 拼音引擎查询候选词，候选窗（QPainter 渲染，wl_shm 缓冲）经 zwp_input_popup_surface_v2 提交显示，位置由合成器贴着文本输入矩形放置，preedit 经 set_preedit_string + commit 实时写回应用
 
 ​
 6. 数字选择候选 → 汉字经 commit_string + commit 提交到Wayland应用（浏览器、GXDE控制中心等）

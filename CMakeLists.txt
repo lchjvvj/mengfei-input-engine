@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(gxde-input-engine VERSION 0.1.2 LANGUAGES C CXX)
+project(gxde-input-engine VERSION 0.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -27,8 +27,9 @@ if(NOT WAYLAND_SCANNER)
 endif()
 
 # gxde-wlcom（wlroots 系合成器）支持的标准输入法协议，XML 与合成器内嵌
-# wlroots 的 protocol 目录一致：input-method-unstable-v2 提供输入法上下文
-# 与独占按键抓取，virtual-keyboard-unstable-v1 用于把未消费按键转发回应用
+# wlroots 的 protocol 目录一致：input-method-unstable-v2 提供输入法上下文、
+# 独占按键抓取与候选窗 popup surface，virtual-keyboard-unstable-v1 用于把
+# 未消费按键转发回应用
 set(WAYLAND_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/wayland-gen)
 file(MAKE_DIRECTORY ${WAYLAND_GEN_DIR})
 set(GXDE_WAYLAND_PROTOCOLS
