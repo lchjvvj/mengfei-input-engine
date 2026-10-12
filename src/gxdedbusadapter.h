@@ -12,7 +12,7 @@ class SettingsPanel;
 // 与 PreeditChanged/CandidateListChanged/CommitText/PageInfoChanged
 // 出站信号）随之删除。这里仅保留 GXDE 控制中心等组件打开设置面板的
 // 管理入口（ShowSettings）。
-// 服务名与 debian/gxde-input-engine.user.service 的 BusName=org.gxde.InputEngine
+// 服务名与 debian/mengfei-input-engine.user.service 的 BusName=org.gxde.InputEngine
 // 保持一致（session bus，systemd user 服务）；注册结果同时充当
 // 单实例守护（名字被占用说明已有引擎在运行）。
 class GXDEDBusAdapter : public QObject

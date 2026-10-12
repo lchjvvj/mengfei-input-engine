@@ -15,7 +15,7 @@ SettingsPanel::SettingsPanel(GXDESettings *settings, QObject *parent)
     m_view->rootContext()->setContextProperty("settingsPanelCpp", this);
     m_view->setSource(QUrl("qrc:/ui/SettingsPanel.qml"));
     m_view->setResizeMode(QQuickView::SizeViewToRootObject);
-    m_view->setTitle(QStringLiteral("输入法设置"));
+    m_view->setTitle(QStringLiteral("梦飞输入法设置"));
 
     // 降级策略：QML 加载失败只告警，
     // 不影响引擎主体与 DBus 服务注册

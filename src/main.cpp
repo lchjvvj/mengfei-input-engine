@@ -13,7 +13,9 @@ int main(int argc, char *argv[])
 {
     // 设置面板仍是 QML 窗口，必须使用QGuiApplication，不能QCoreApplication！
     QGuiApplication app(argc, argv);
-    QGuiApplication::setApplicationName("gxde-input-engine");
+    QGuiApplication::setApplicationName("mengfei-input-engine");
+    // 产品名：梦飞输入法（窗口标题等用户可见场景的默认应用名）
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("梦飞输入法"));
     // 引擎是后台常驻服务（systemd user 单元）：关闭设置面板窗口
     // 是"最后一个窗口关闭"，不能触发进程退出
     QGuiApplication::setQuitOnLastWindowClosed(false);
@@ -33,7 +35,7 @@ int main(int argc, char *argv[])
     // 注册结果同时充当单实例守护
     GXDEDBusAdapter dbusAdapter(&settingsPanel);
     if (!dbusAdapter.registerService()) {
-        qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
+        qCritical() << "DBus 服务注册失败，退出（请检查是否已有 mengfei-input-engine 实例在运行）";
         return -1;
     }
 
@@ -102,6 +104,6 @@ int main(int argc, char *argv[])
     // 需要坐标推送：zwp_input_popup_surface_v2 由合成器贴着 text-input-v3
     // set_cursor_rectangle 上报的文本输入矩形放置，并自动做屏幕边界避让
 
-    qDebug() << "GXDE Input Engine with CandidateBar UI running...";
+    qDebug() << "Mengfei Input Engine (梦飞输入法) with CandidateBar UI running...";
     return app.exec();
 }

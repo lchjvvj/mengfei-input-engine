@@ -6,7 +6,7 @@
 
 class GXDESettings;
 
-// 输入法设置面板（QtQuick）：中英文切换、候选栏样式、主题配置。
+// 梦飞输入法设置面板（QtQuick）：中英文切换、候选栏样式、主题配置。
 // QQuickView 承载 qrc 内的 QML，QML 根项使用普通 Item（QQuickView
 // 不支持 Window 作根项）。候选栏已改经 zwp_input_popup_surface_v2
 // 显示（见 CandidateBar/GXDEWaylandIM），设置面板仍是普通窗口。

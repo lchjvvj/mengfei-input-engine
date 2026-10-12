@@ -6,8 +6,8 @@
 override_dh_auto_configure:
 	dh_auto_configure -- -DCMAKE_INSTALL_PREFIX=/usr
 
-# install systemd user service: debian/gxde-input-engine.user.service is
-# installed by dh_installsystemduser as usr/lib/systemd/user/gxde-input-engine.service.
+# install systemd user service: debian/mengfei-input-engine.user.service is
+# installed by dh_installsystemduser as usr/lib/systemd/user/mengfei-input-engine.service.
 # the .user naming keeps dh_installsystemd from picking the unit up as a
 # system unit (which would install it into usr/lib/systemd/system/ and
 # enable/start it from the root postinst).

@@ -1,3 +1,22 @@
+mengfei-input-engine (0.2.1) unstable; urgency=low
+
+  * 输入法名称更改为「梦飞输入法」，软件包同步更名：源码包/二进制包
+    由 gxde-input-engine 改为 mengfei-input-engine，可执行文件安装为
+    /usr/bin/mengfei-input-engine，systemd 用户单元更名为
+    mengfei-input-engine.service，启用命令相应变为
+    systemctl --user enable --now mengfei-input-engine.service
+  * 用户可见名称同步：Qt 应用显示名称、Rime distribution_name 与
+    设置面板窗口标题/页头改为「梦飞输入法（设置）」，README 产品
+    介绍同步更新
+  * 用户数据目录随包名迁移至 ~/.config/mengfei-input-engine/
+    （settings.ini 与 rime/ 用户词频、部署产物）：旧目录数据不再
+    读取，首次启动会重新部署 Rime 方案（约数秒），用户词频如需
+    保留可自行拷贝旧目录
+  * DBus 服务名 org.gxde.InputEngine 保持不变，GXDE 控制中心经
+    ShowSettings 打开设置面板的集成不受影响
+
+ -- gfc <ffgcc45@qq.com>  Mon, 12 Oct 2026 18:00:00 +0800
+
 gxde-input-engine (0.2.0) unstable; urgency=low
 
   * 候选窗改为标准 zwp_input_popup_surface_v2 显示：GXDEWaylandIM 在
