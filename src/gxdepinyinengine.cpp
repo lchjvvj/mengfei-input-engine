@@ -60,14 +60,14 @@ QString rimeSharedDataDir()
 QString rimeUserDataDir()
 {
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-           + QLatin1String("/gxde-input-engine/rime");
+           + QLatin1String("/mengfei-input-engine/rime");
 }
 
 // 首次运行写入的方案列表补丁：只启用朙月拼音·简化字（luna_pinyin_simp），
 // 与旧版内置词库的简体输出一致，并避免 default.yaml 默认方案列表引用
 // 未安装的方案数据（bopomofo/cangjie5 等）导致整体部署失败
 const char *const kDefaultCustomYaml =
-    "# 由 gxde-input-engine 首次运行时写入。\n"
+    "# 由 mengfei-input-engine 首次运行时写入。\n"
     "# 仅启用朙月拼音·简化字；如需其他方案，安装对应 rime-data-* 包后\n"
     "# 在 schema_list 中补充，删除用户目录下 build/ 重新部署即可。\n"
     "patch:\n"
@@ -106,15 +106,15 @@ struct RimeGlobal
         // 保持存活到调用返回即可
         const QByteArray sharedDirUtf8 = sharedDir.toUtf8();
         const QByteArray userDirUtf8 = userDir.toUtf8();
-        const QByteArray appName = QByteArrayLiteral("rime.gxde-input-engine");
+        const QByteArray appName = QByteArrayLiteral("rime.mengfei-input-engine");
         const QByteArray distVersion = QByteArrayLiteral(GXDE_VERSION);
 
         RIME_STRUCT(RimeTraits, traits);
         traits.shared_data_dir = sharedDirUtf8.constData();
         traits.user_data_dir = userDirUtf8.constData();
         traits.app_name = appName.constData();
-        traits.distribution_name = "GXDE";
-        traits.distribution_code_name = "gxde-input-engine";
+        traits.distribution_name = "梦飞输入法";
+        traits.distribution_code_name = "mengfei-input-engine";
         traits.distribution_version = distVersion.constData();
 
         api->setup(&traits);

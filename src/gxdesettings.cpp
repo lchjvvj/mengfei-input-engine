@@ -8,11 +8,11 @@
 namespace {
 
 // 设置文件路径：与 GXDEPinyinEngine 的 rime 用户目录同级
-//（~/.config/gxde-input-engine/），目录不存在时自动创建
+//（~/.config/mengfei-input-engine/），目录不存在时自动创建
 QString settingsFilePath()
 {
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-                        + QLatin1String("/gxde-input-engine");
+                        + QLatin1String("/mengfei-input-engine");
     QDir().mkpath(dir);
     return dir + QLatin1String("/settings.ini");
 }

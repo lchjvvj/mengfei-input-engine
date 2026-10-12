@@ -1,9 +1,9 @@
 1. GXDE主题联动：目前 darkMode 是手动设置；可接入GXDE主题守护进程 gxde-theme-daemon 监听主题变更，自动切换候选栏明暗色。
 ​
-2. 光标坐标来源：gxde-wlcom 把 text-input-v3 set_cursor_rectangle 光标矩形（surface 局部坐标换算为全局坐标）通过 DBus SetCursorRect 接口实时推送给引擎，候选栏紧贴矩形左下角跟随定位，不遮挡光标行；应用未上报光标区域（空矩形）时回退默认行高偏移，SetCursorPos 为点形式兼容入口。
+2. 候选窗定位：候选窗经 zwp_input_popup_surface_v2 显示，合成器直接拿到应用 text-input-v3 set_cursor_rectangle 上报的文本输入矩形，自动把候选窗贴着矩形放置（不遮挡光标行）；引擎不再接收光标坐标，原 DBus SetCursorRect/SetCursorPos 推送链路已随整套 DBus 按键协议删除。
 ​
-3. 屏幕边界避让：QML已经写了基础避让逻辑，防止候选栏跑到屏幕外。
+3. 屏幕边界避让：由合成器完成——popup 放置时下方放不下自动翻转到上方、横向夹取到输出内，引擎侧无需避让逻辑。
 ​
-4. 快捷键：目前支持鼠标点击选词；可以继续增加键盘上下方向键切换候选词。
+4. 快捷键：支持数字键选词、上下方向键切换候选、翻页键翻页；zwp_input_popup_surface_v2 不接收指针事件，鼠标点击选词在 popup 模式下不可用。
 ​
-5. Wayland下QtQuick窗口注意：GXDE Wayland会话运行，不要使用X11后端，Qt自动走Wayland。
+5. Wayland下QtQuick窗口注意：设置面板仍是 QtQuick 窗口，GXDE Wayland会话运行，不要使用X11后端，Qt自动走Wayland；候选窗已不是 Qt 窗口（QPainter 渲染，经引擎自己的 Wayland 连接提交 popup surface）。

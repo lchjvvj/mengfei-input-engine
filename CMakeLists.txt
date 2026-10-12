@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(gxde-input-engine VERSION 0.1.2 LANGUAGES C CXX)
+project(mengfei-input-engine VERSION 0.2.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -27,8 +27,9 @@ if(NOT WAYLAND_SCANNER)
 endif()
 
 # gxde-wlcom（wlroots 系合成器）支持的标准输入法协议，XML 与合成器内嵌
-# wlroots 的 protocol 目录一致：input-method-unstable-v2 提供输入法上下文
-# 与独占按键抓取，virtual-keyboard-unstable-v1 用于把未消费按键转发回应用
+# wlroots 的 protocol 目录一致：input-method-unstable-v2 提供输入法上下文、
+# 独占按键抓取与候选窗 popup surface，virtual-keyboard-unstable-v1 用于把
+# 未消费按键转发回应用
 set(WAYLAND_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/wayland-gen)
 file(MAKE_DIRECTORY ${WAYLAND_GEN_DIR})
 set(GXDE_WAYLAND_PROTOCOLS
@@ -58,7 +59,7 @@ endforeach()
 qt_standard_project_setup()
 qt_add_resources(QRC_FILES src/ui/qml.qrc)
 
-qt_add_executable(gxde-input-engine
+qt_add_executable(mengfei-input-engine
     src/gxdeinputcore.h
     src/gxdeinputcore.cpp
     src/gxdedbusadapter.h
@@ -80,19 +81,19 @@ qt_add_executable(gxde-input-engine
     ${QRC_FILES}
 )
 
-target_compile_definitions(gxde-input-engine PRIVATE GXDE_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(mengfei-input-engine PRIVATE GXDE_VERSION="${PROJECT_VERSION}")
 
 # wayland-scanner 生成的 *-client-protocol.h 所在目录
-target_include_directories(gxde-input-engine PRIVATE ${WAYLAND_GEN_DIR})
+target_include_directories(mengfei-input-engine PRIVATE ${WAYLAND_GEN_DIR})
 
-target_link_libraries(gxde-input-engine PRIVATE
+target_link_libraries(mengfei-input-engine PRIVATE
     Qt6::Core Qt6::DBus Qt6::Gui Qt6::WaylandClient Qt6::Quick Qt6::QuickControls2
     PkgConfig::WAYLAND_CLIENT
     PkgConfig::XKBCOMMON
     PkgConfig::RIME
 )
 
-install(TARGETS gxde-input-engine DESTINATION bin)
+install(TARGETS mengfei-input-engine DESTINATION bin)
 install(FILES protocol/zwp-text-input-v3.xml
               protocol/input-method-unstable-v2.xml
               protocol/virtual-keyboard-unstable-v1.xml
