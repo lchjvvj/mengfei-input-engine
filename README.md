@@ -11,14 +11,14 @@
 
 #### 语言
 
-C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器，候选窗经 zwp_input_popup_surface_v2 显示（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
+C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连合成器，候选zwp_input_popup_surface_v2 显示（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
 
-1. 原生对接  合成器 ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用，候选窗经 zwp_input_popup_surface_v2 由合成器放置在焦点文本输入区域附近
+1. 原生对接合成器 ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用，候选窗经 zwp_input_popup_surface_v2 由合成器放置在焦点文本输入区域附近
 ​
-2. 可选两种模式：独立内置引擎 / 作为fcitx5前端代理
+2. 可选模式：独立内置引擎/作为fcitx5前端代理
 ​
 3. 适配GXDE和其他桌面环境，跟随系统主题（深色/浅色）
 ​
@@ -80,13 +80,13 @@ journalctl --user -u mengfei-input-engine.service -f
 
 #### 运行流程
 
-1. gxde-wlcom 合成器启动
+1. gxde-wlcom或其他合成器启动
 
 ​
-2.  mengfei-input-engine（梦飞输入法）作为独立后台进程启动（systemd/user 服务），通过 wl_display_connect 直连合成器并注册为 zwp_input_method_v2 输入法（合成器未就绪时每 5 秒自动重试）
+2. mengfei-input-engine（梦飞输入法）作为独立后台进程启动（systemd/user 服务），通过 wl_display_connect 直连合成器并注册为 zwp_input_method_v2 输入法（合成器未就绪时每 5 秒自动重试）
 
 ​
-3. 用户点击输入框 → 应用经 text-input-v3 请求激活 → gxde-wlcom 向引擎发送 activate 事件，引擎 grab_keyboard 取得独占按键抓取
+3. 用户点击输入框 → 应用经 text-input-v3 请求激活 → 合成器向引擎发送 activate 事件，引擎 grab_keyboard 取得独占按键抓取
 
 ​
 4. 按键由合成器路由给引擎：参与组字的按键被引擎消费，其余按键经虚拟键盘转发回应用；按键自动重复与修饰键状态由引擎按 repeat_info/modifiers 事件补齐并转发
