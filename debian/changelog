@@ -1,3 +1,28 @@
+mengfei-input-engine (0.2.2) unstable; urgency=low
+
+  * 补充 QML 运行时依赖：设置面板 SettingsPanel.qml 经 QQuickView 在运行
+    时 import QtQuick / QtQuick.Controls / QtQuick.Layouts，QML 模块由
+    QML 引擎在运行时从 qt6/qml/ 动态加载，不属于二进制的 ELF 链接依赖，
+    ${shlibs:Depends} 覆盖不到；未安装对应模块包的最小系统上设置面板
+    加载失败（module "..." is not installed，引擎主体可启动但设置入口
+    不可用）。现 Depends 补充 qml6-module-qtqml、qml6-module-qtqml-models、
+    qml6-module-qtqml-workerscript、qml6-module-qtquick、
+    qml6-module-qtquick-controls、qml6-module-qtquick-layouts、
+    qml6-module-qtquick-templates
+  * 依赖集合按 Debian 12（Qt 6.4）实测确定，该版本 qml6-module-* 之间
+    无相互依赖声明，隐式加载的模块也需显式声明：QtQuick 的 qmldir
+    auto 导入 QtQml，QtQml 又 auto 导入 QtQml.Models /
+    QtQml.WorkerScript（缺失即加载失败，auto 导入并非可选项）；
+    Controls 风格控件（Basic/Fusion 等，插件均含于
+    qml6-module-qtquick-controls）为组合式 QML，import
+    QtQuick.Templates，需 qml6-module-qtquick-templates。
+    QtQuick.Window 未声明：面板根项为普通 Item，窗口由 C++ 侧
+    QQuickView 创建，QML 未 import 该模块，实测不加载亦可
+  * CMake 工程版本同步升至 0.2.2（GXDE_VERSION，随 Rime
+    distribution 版本写入部署产物）
+
+ -- gfc <ffgcc45@qq.com>  Mon, 12 Oct 2026 22:40:00 +0800
+
 mengfei-input-engine (0.2.1) unstable; urgency=low
 
   * 输入法名称更改为「梦飞输入法」，软件包同步更名：源码包/二进制包
