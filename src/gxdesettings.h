@@ -6,7 +6,7 @@
 #include <QVariant>
 
 // 输入法全局设置：设置面板（QML）、候选栏与输入核心共用的唯一数据源。
-// 通过 QSettings(ini) 持久化，文件位于 ~/.config/gxde-input-engine/settings.ini
+// 通过 QSettings(ini) 持久化，文件位于 ~/.config/mengfei-input-engine/settings.ini
 //（与 rime 用户数据目录同级）。包含三类配置，与设置面板一一对应：
 //   - 中英文切换：chineseEnabled（关闭后引擎不消费按键，直接上屏英文）
 //   - 候选栏样式：barFontSize / barSpacing / showPageInfo

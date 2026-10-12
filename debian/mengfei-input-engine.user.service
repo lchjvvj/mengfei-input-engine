@@ -1,6 +1,6 @@
 [Unit]
-Description=GXDE Native Input Engine
-Documentation=man:gxde-input-engine(1)
+Description=Mengfei Input Engine (梦飞输入法)
+Documentation=man:mengfei-input-engine(1)
 # 合成器 gxde-wlcom 不由 systemd 管理（不存在对应单元）：不声明 Requires；
 # 合成器未就绪或连接断开时引擎每 5 秒自动重连
 After=graphical-session.target wayland-session.target
@@ -8,7 +8,7 @@ After=graphical-session.target wayland-session.target
 [Service]
 Type=dbus
 BusName=org.gxde.InputEngine
-ExecStart=/usr/bin/gxde-input-engine
+ExecStart=/usr/bin/mengfei-input-engine
 Restart=on-failure
 RestartSec=3
 # 日志输出

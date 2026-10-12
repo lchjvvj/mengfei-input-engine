@@ -2,7 +2,7 @@ import QtQuick 6.0
 import QtQuick.Controls 6.0
 import QtQuick.Layouts 6.0
 
-// 输入法设置面板：中英文切换、候选栏样式、主题配置。
+// 梦飞输入法设置面板：中英文切换、候选栏样式、主题配置。
 // 所有控件直接读写 settingsCpp（GXDESettings）属性：修改即持久化，
 // 候选栏 QML 绑定同一对象，样式与主题即时生效。
 // 根项为普通 Item（QQuickView 不支持 Window 作根项），窗口标题由 C++ 设置。
@@ -49,7 +49,7 @@ Rectangle {
             spacing: 16
 
             Label {
-                text: "输入法设置"
+                text: "梦飞输入法设置"
                 font.pixelSize: 24
                 font.bold: true
             }
@@ -133,7 +133,7 @@ Rectangle {
                         onToggled: settingsCpp.showPageInfo = checked
                     }
 
-                    // 实时预览：与 CandidateBar.qml 相同的渲染规则，
+                    // 实时预览：与候选栏（CandidateBar 渲染器）相同的渲染规则，
                     // 拖动滑块/切换主题立即可见效果
                     Rectangle {
                         Layout.fillWidth: true

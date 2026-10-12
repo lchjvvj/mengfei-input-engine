@@ -1,11 +1,14 @@
 #include "gxdewaylandim.h"
 
 #include <cerrno>
+#include <cstdint>
 #include <cstring>
 #include <utility>
 
 #include <QByteArray>
 #include <QDebug>
+#include <QHash>
+#include <QImage>
 #include <QList>
 #include <QSocketNotifier>
 #include <QString>
@@ -23,6 +26,7 @@
 
 #include "gxdeinputcore.h"
 #include "gxdepinyinengine.h"
+#include "ui/CandidateBar.hpp"
 
 namespace {
 // Wayland 连接失败/断开后的重试间隔：合成器可能在启动或重启，不宜忙轮询
@@ -30,12 +34,18 @@ constexpr int kReconnectIntervalMs = 5000;
 // wl_seat 绑定版本上限：seat 仅作为 get_input_method /
 // create_virtual_keyboard 的参数使用，不消费其键盘能力
 constexpr uint32_t kSeatVersionMax = 9;
+// wl_compositor 绑定版本上限：v3 起提供 set_buffer_scale，
+// 候选窗按输出缩放提交缓冲时需要
+constexpr uint32_t kCompositorVersionMax = 6;
+// wl_output 绑定版本：v2 起提供 scale 事件，足够候选窗决定渲染缩放
+constexpr uint32_t kOutputVersionMax = 2;
 }
 
 class GXDEWaylandIM::Private
 {
 public:
-    Private(GXDEWaylandIM *qq, GXDEInputCore *corePtr, GXDEPinyinEngine *pinyinPtr);
+    Private(GXDEWaylandIM *qq, GXDEInputCore *corePtr, GXDEPinyinEngine *pinyinPtr,
+            CandidateBar *uiPtr);
     ~Private();
 
     // ---- 连接管理 ----
@@ -51,6 +61,9 @@ public:
     // ---- 协议对象建立 ----
     void setupInputMethod();
     void setupVirtualKeyboard();
+    // 候选窗 popup surface：需要 compositor 与 inputMethod 都就绪
+    //（全局对象到达顺序不定，两路 setup 都会尝试）
+    void setupPopupSurface();
 
     // ---- 合成器事件处理 ----
     void handleActivate();
@@ -66,6 +79,14 @@ public:
     // ---- 状态写回 ----
     void scheduleStateFlush();
     void flushState();
+
+    // ---- 候选窗（zwp_input_popup_surface_v2）----
+    // 把 pendingFrame 拷贝进新建的 wl_shm 缓冲提交到 popup surface；
+    // 空帧提交空缓冲，候选窗随内容隐藏
+    void commitPopupFrame();
+    // popup surface 所在输出的 scale 作为候选窗渲染缩放，变化时
+    // 通知 CandidateBar 按新缩放重绘
+    void updatePopupScale();
 
     // ---- Wayland 静态监听器（data 指向本 Private）----
     static void registryGlobal(void *data, wl_registry *registry, uint32_t name,
@@ -91,32 +112,68 @@ public:
                               uint32_t locked, uint32_t group);
     static void grabRepeatInfo(void *data, zwp_input_method_keyboard_grab_v2 *grab,
                                int32_t rate, int32_t delay);
+    static void popupTextInputRectangle(void *data, zwp_input_popup_surface_v2 *popup,
+                                        int32_t x, int32_t y, int32_t width, int32_t height);
+    static void popupSurfaceEnter(void *data, wl_surface *surface, wl_output *output);
+    static void popupSurfaceLeave(void *data, wl_surface *surface, wl_output *output);
+    static void outputGeometry(void *data, wl_output *output, int32_t x, int32_t y,
+                               int32_t physicalWidth, int32_t physicalHeight,
+                               int32_t subpixel, const char *make, const char *model,
+                               int32_t transform);
+    static void outputMode(void *data, wl_output *output, uint32_t flags,
+                           int32_t width, int32_t height, int32_t refresh);
+    static void outputDone(void *data, wl_output *output);
+    static void outputScale(void *data, wl_output *output, int32_t factor);
+    static void bufferRelease(void *data, wl_buffer *buffer);
 
     // 监听器结构体：字段顺序必须与协议 XML 的事件声明顺序一致
     static const struct wl_registry_listener kRegistryListener;
     static const struct wl_seat_listener kSeatListener;
     static const struct zwp_input_method_v2_listener kInputMethodListener;
     static const struct zwp_input_method_keyboard_grab_v2_listener kKeyboardGrabListener;
+    static const struct zwp_input_popup_surface_v2_listener kInputPopupListener;
+    static const struct wl_surface_listener kPopupSurfaceListener;
+    static const struct wl_output_listener kOutputListener;
+    static const struct wl_buffer_listener kBufferListener;
 
     GXDEWaylandIM *q;
     GXDEInputCore *core;
     GXDEPinyinEngine *pinyin;
+    // 候选窗渲染器：其 frameChanged 帧经 popup surface 提交显示
+    CandidateBar *ui;
 
     // Wayland 连接与协议对象（断开后全部置空，重连时重建）
     wl_display *display = nullptr;
     wl_registry *registry = nullptr;
     wl_seat *seat = nullptr;
+    wl_compositor *compositor = nullptr;
+    wl_shm *shm = nullptr;
     zwp_input_method_manager_v2 *imManager = nullptr;
     zwp_virtual_keyboard_manager_v1 *vkManager = nullptr;
     zwp_input_method_v2 *inputMethod = nullptr;
     zwp_input_method_keyboard_grab_v2 *keyboardGrab = nullptr;
     zwp_virtual_keyboard_v1 *virtualKeyboard = nullptr;
+    // 候选窗：专用 wl_surface + input_popup 角色包装（合成器负责放置）
+    wl_surface *popupSurface = nullptr;
+    zwp_input_popup_surface_v2 *inputPopup = nullptr;
 
     // 已绑定全局对象的注册表名字（0 表示未绑定）：global_remove 时
-    // 只有这三个被移除才需要重连，输出等其它全局对象变化不影响连接
+    // 这几个被移除意味着连接不可用，需要重连；输出等其它全局对象
+    // 变化不影响连接（输出热插拔单独处理）
     uint32_t boundSeatName = 0;
     uint32_t boundImManagerName = 0;
     uint32_t boundVkManagerName = 0;
+    uint32_t boundCompositorName = 0;
+    uint32_t boundShmName = 0;
+    // wl_compositor 实际绑定版本：v3 起才有 set_buffer_scale 请求
+    uint32_t compositorVersion = 0;
+
+    // 输出缩放跟踪：popup surface 的 enter/leave 事件给出 wl_output 代理，
+    // 据此查询 scale 决定候选窗渲染与提交的缓冲缩放（HiDPI）
+    QHash<uint32_t, wl_output *> outputsByName;  // 注册表名字 -> 代理
+    QHash<wl_output *, int32_t> outputScales;    // 代理 -> scale（缺省 1）
+    QList<wl_output *> popupOutputs;             // popup surface 已进入的输出
+    int32_t popupScale = 1;                      // 当前候选窗渲染/提交缩放
 
     // Qt 事件循环接入
     QSocketNotifier *readNotifier = nullptr;
@@ -130,6 +187,10 @@ public:
     uint32_t serial = 0;          // 已收到 done 事件计数，commit 请求的协议 serial
     QString preeditText;          // 当前 preedit；pending 状态每次 commit 后清零，需全量重发
     QByteArray pendingCommit;     // 待上屏文本（UTF-8），commit 后清空
+
+    // 候选窗最新帧：popup surface 未就绪（compositor 全局对象晚到/重连中）
+    // 时暂存，就绪后补提交；空帧表示候选窗隐藏
+    QImage pendingFrame;
 
     // 按键抓取状态
     bool vkHasKeymap = false;     // 协议约束：虚拟键盘发 key/modifiers 前必须先发 keymap
@@ -169,9 +230,31 @@ const struct zwp_input_method_keyboard_grab_v2_listener GXDEWaylandIM::Private::
     grabRepeatInfo,
 };
 
+const struct zwp_input_popup_surface_v2_listener GXDEWaylandIM::Private::kInputPopupListener = {
+    popupTextInputRectangle,
+};
+
+const struct wl_surface_listener GXDEWaylandIM::Private::kPopupSurfaceListener = {
+    popupSurfaceEnter,
+    popupSurfaceLeave,
+};
+
+// wl_output 绑定在 v2（scale 是 v2 事件），name/description（v4）
+// 留空即可：服务端不会向低版本绑定发送
+const struct wl_output_listener GXDEWaylandIM::Private::kOutputListener = {
+    outputGeometry,
+    outputMode,
+    outputDone,
+    outputScale,
+};
+
+const struct wl_buffer_listener GXDEWaylandIM::Private::kBufferListener = {
+    bufferRelease,
+};
+
 GXDEWaylandIM::GXDEWaylandIM(GXDEInputCore *core, GXDEPinyinEngine *pinyin,
-                             QObject *parent)
-    : QObject(parent), d(new Private(this, core, pinyin))
+                             CandidateBar *ui, QObject *parent)
+    : QObject(parent), d(new Private(this, core, pinyin, ui))
 {
 }
 
@@ -187,8 +270,8 @@ void GXDEWaylandIM::start()
 }
 
 GXDEWaylandIM::Private::Private(GXDEWaylandIM *qq, GXDEInputCore *corePtr,
-                                GXDEPinyinEngine *pinyinPtr)
-    : q(qq), core(corePtr), pinyin(pinyinPtr)
+                                GXDEPinyinEngine *pinyinPtr, CandidateBar *uiPtr)
+    : q(qq), core(corePtr), pinyin(pinyinPtr), ui(uiPtr)
 {
     reconnectTimer.setSingleShot(true);
     QObject::connect(&reconnectTimer, &QTimer::timeout, q, [this] {
@@ -211,17 +294,23 @@ GXDEWaylandIM::Private::Private(GXDEWaylandIM *qq, GXDEInputCore *corePtr,
         repeatTimer.start(interval);
     });
 
-    // preedit 写回：与 DBus PreeditChanged 信号同源（拼音引擎 preeditUpdate）
+    // preedit 写回：拼音引擎 preeditUpdate 出站链路
     QObject::connect(pinyin, &GXDEPinyinEngine::preeditUpdate, q,
                      [this](const QString &text) {
         preeditText = text;
         scheduleStateFlush();
     });
-    // 上屏写回：与 DBus CommitText 信号同源（core 的 textCommitted 出站链路）
+    // 上屏写回：core 的 textCommitted 出站链路
     QObject::connect(core, &GXDEInputCore::textCommitted, q,
                      [this](const QString &text) {
         pendingCommit.append(text.toUtf8());
         scheduleStateFlush();
+    });
+    // 候选窗帧：CandidateBar（QPainter 渲染）出帧后拷贝进 wl_shm 缓冲，
+    // 经 zwp_input_popup_surface_v2 提交显示；空帧提交空缓冲隐藏候选窗
+    QObject::connect(ui, &CandidateBar::frameChanged, q, [this](const QImage &frame) {
+        pendingFrame = frame;
+        commitPopupFrame();
     });
 }
 
@@ -235,8 +324,8 @@ bool GXDEWaylandIM::Private::connectToCompositor()
     if (display)
         return true;
 
-    // 独立连接：不依赖 Qt WaylandClient 的私有 display，与候选栏 UI 的
-    // 连接互不干扰（fcitx5 同款做法）
+    // 独立连接：不依赖 Qt WaylandClient 的私有 display，与设置面板
+    //（Qt 窗口）的连接互不干扰（fcitx5 同款做法）
     display = wl_display_connect(nullptr);
     if (!display) {
         qWarning() << "[GXDEWaylandIM] 无法连接 Wayland 合成器（WAYLAND_DISPLAY 不可用？）";
@@ -302,20 +391,33 @@ void GXDEWaylandIM::Private::disconnectFromCompositor()
         deferredKeymapSize = 0;
     }
     // wl_display_disconnect 会释放连接上的全部客户端代理：协议对象只需置空，
-    // 合成器侧在客户端断开后自动清理输入法/虚拟键盘资源
+    // 合成器侧在客户端断开后自动清理输入法/虚拟键盘/popup surface 资源
     if (display)
         wl_display_disconnect(display);
     display = nullptr;
     registry = nullptr;
     seat = nullptr;
+    compositor = nullptr;
+    shm = nullptr;
     imManager = nullptr;
     vkManager = nullptr;
     inputMethod = nullptr;
     keyboardGrab = nullptr;
     virtualKeyboard = nullptr;
+    popupSurface = nullptr;
+    inputPopup = nullptr;
     boundSeatName = 0;
     boundImManagerName = 0;
     boundVkManagerName = 0;
+    boundCompositorName = 0;
+    boundShmName = 0;
+    compositorVersion = 0;
+    // 输出代理随连接一并失效：只清跟踪表，不发 destroy 请求
+    //（pendingFrame 保留：重连重建 popup surface 后补提交）
+    outputsByName.clear();
+    outputScales.clear();
+    popupOutputs.clear();
+    popupScale = 1;
 
     vkHasKeymap = false;
     serial = 0;
@@ -383,6 +485,7 @@ void GXDEWaylandIM::Private::setupInputMethod()
         return;
     inputMethod = zwp_input_method_manager_v2_get_input_method(imManager, seat);
     zwp_input_method_v2_add_listener(inputMethod, &kInputMethodListener, this);
+    setupPopupSurface();
 }
 
 void GXDEWaylandIM::Private::setupVirtualKeyboard()
@@ -404,6 +507,111 @@ void GXDEWaylandIM::Private::setupVirtualKeyboard()
     }
 }
 
+void GXDEWaylandIM::Private::setupPopupSurface()
+{
+    if (!compositor || !inputMethod || popupSurface)
+        return;
+    // 专用 surface + input_popup 角色：合成器负责把它放置在焦点文本
+    // 输入区域附近（下方放不下翻转到上方，横向夹取到输出内），并且
+    // 只在输入法激活状态显示——引擎不再需要光标坐标与自行定位
+    popupSurface = wl_compositor_create_surface(compositor);
+    wl_surface_add_listener(popupSurface, &kPopupSurfaceListener, this);
+    inputPopup = zwp_input_method_v2_get_input_popup_surface(inputMethod, popupSurface);
+    zwp_input_popup_surface_v2_add_listener(inputPopup, &kInputPopupListener, this);
+    // popup 就绪前（compositor 全局对象晚到/重连）缓存的候选帧补提交
+    if (!pendingFrame.isNull())
+        commitPopupFrame();
+}
+
+void GXDEWaylandIM::Private::commitPopupFrame()
+{
+    if (!popupSurface || !shm)
+        return;  // 帧已缓存在 pendingFrame，setupPopupSurface 后补提交
+    if (pendingFrame.isNull()) {
+        // 空帧：解除缓冲挂接，候选窗随内容隐藏
+        wl_surface_attach(popupSurface, nullptr, 0, 0);
+        wl_surface_damage(popupSurface, 0, 0, INT32_MAX, INT32_MAX);
+        wl_surface_commit(popupSurface);
+        flushRequests();
+        return;
+    }
+
+    QImage frame = pendingFrame;
+    if (frame.format() != QImage::Format_ARGB32_Premultiplied)
+        frame = frame.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    const int width = frame.width();
+    const int height = frame.height();
+    const int stride = width * 4;
+    const int size = stride * height;
+
+    // 匿名内存文件作为 wl_shm 池数据源：每帧新建 pool+buffer（候选帧
+    // 按按键节奏产生，频率低），pool 建完 buffer 即销毁，缓冲由合成器
+    // release 事件后销毁代理，避免复用同步问题
+    const int fd = memfd_create("gxde-im-popup", MFD_CLOEXEC);
+    if (fd < 0) {
+        qWarning() << "[GXDEWaylandIM] memfd_create 失败:" << strerror(errno);
+        return;
+    }
+    if (ftruncate(fd, size) < 0) {
+        qWarning() << "[GXDEWaylandIM] ftruncate 失败:" << strerror(errno);
+        close(fd);
+        return;
+    }
+    void *map = mmap(nullptr, static_cast<size_t>(size), PROT_READ | PROT_WRITE,
+                     MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
+        qWarning() << "[GXDEWaylandIM] mmap 候选帧缓冲失败:" << strerror(errno);
+        close(fd);
+        return;
+    }
+    if (frame.bytesPerLine() == stride) {
+        memcpy(map, frame.constBits(), static_cast<size_t>(size));
+    } else {
+        // QImage 行末可能有对齐填充：逐行拷贝成紧凑 stride
+        for (int y = 0; y < height; ++y)
+            memcpy(static_cast<char *>(map) + static_cast<size_t>(y) * stride,
+                   frame.constScanLine(y), static_cast<size_t>(stride));
+    }
+    munmap(map, static_cast<size_t>(size));
+
+    wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
+    wl_buffer *buffer = wl_shm_pool_create_buffer(pool, 0, width, height, stride,
+                                                  WL_SHM_FORMAT_ARGB8888);
+    wl_shm_pool_destroy(pool);
+    wl_buffer_add_listener(buffer, &kBufferListener, this);
+    // fd 要等消息真正写入套接字（flush 成功）后才能关闭，与 keymap fd 同约定
+    pendingFds.append(fd);
+
+    wl_surface_attach(popupSurface, buffer, 0, 0);
+    // set_buffer_scale 是 wl_surface v3 请求：低版本绑定时跳过
+    //（帧按 scale=1 渲染，逻辑尺寸即物理尺寸）。scale 跨 commit 保持，
+    // 缩放变化（含降回 1）都必须显式重发
+    if (compositorVersion >= 3)
+        wl_surface_set_buffer_scale(popupSurface, popupScale);
+    wl_surface_damage(popupSurface, 0, 0, INT32_MAX, INT32_MAX);
+    wl_surface_commit(popupSurface);
+    flushRequests();
+}
+
+void GXDEWaylandIM::Private::updatePopupScale()
+{
+    // popup surface 只会在一个输出上显示：取首个进入输出的 scale
+    int32_t scale = 1;
+    if (!popupOutputs.isEmpty())
+        scale = outputScales.value(popupOutputs.first(), 1);
+    if (scale == popupScale)
+        return;
+    popupScale = scale;
+    // 通知渲染器按新缩放重绘：frameChanged 回来后经 commitPopupFrame
+    // 以新尺寸缓冲提交（set_buffer_scale 保证逻辑位置/尺寸不变）
+    const qint64 frameBefore = pendingFrame.cacheKey();
+    ui->setDevicePixelRatio(popupScale);
+    // 系数与渲染端一致时（如断线重连把 popupScale 重置回 1）不会出
+    // 新帧，需重提交缓存帧，让 buffer_scale 与帧的实际缩放对齐
+    if (pendingFrame.cacheKey() == frameBefore)
+        commitPopupFrame();
+}
+
 void GXDEWaylandIM::Private::handleActivate()
 {
     core->activateContext();
@@ -421,8 +629,8 @@ void GXDEWaylandIM::Private::handleActivate()
 void GXDEWaylandIM::Private::handleDeactivate()
 {
     repeatTimer.stop();
-    // 先清拼音状态：触发空 preedit 写回并隐藏候选栏（与 DBus Deactivate
-    // 的处理一致），再关闭输入上下文
+    // 先清拼音状态：触发空 preedit 写回并隐藏候选窗（空帧提交空缓冲，
+    // 合成器同时按协议隐藏 popup surface），再关闭输入上下文
     pinyin->clear();
     core->deactivateContext();
     flushRequests();
@@ -581,6 +789,25 @@ void GXDEWaylandIM::Private::registryGlobal(void *data, wl_registry *registry,
         wl_seat_add_listener(self->seat, &kSeatListener, self);
         self->setupInputMethod();
         self->setupVirtualKeyboard();
+    } else if (strcmp(interface, wl_compositor_interface.name) == 0) {
+        // 候选窗 popup surface 的 wl_surface 由它创建
+        self->compositorVersion = qMin(version, kCompositorVersionMax);
+        self->compositor = static_cast<wl_compositor *>(wl_registry_bind(
+            registry, name, &wl_compositor_interface, self->compositorVersion));
+        self->boundCompositorName = name;
+        self->setupPopupSurface();
+    } else if (strcmp(interface, wl_shm_interface.name) == 0) {
+        // 候选帧缓冲数据源（wl_shm v1 即够用）
+        self->shm = static_cast<wl_shm *>(wl_registry_bind(
+            registry, name, &wl_shm_interface, 1u));
+        self->boundShmName = name;
+    } else if (strcmp(interface, wl_output_interface.name) == 0) {
+        // 绑定全部输出：popup surface 的 enter/leave 事件给出输出代理，
+        // 据此查询 scale 决定候选窗渲染缩放（v2 起才有 scale 事件）
+        auto *output = static_cast<wl_output *>(wl_registry_bind(
+            registry, name, &wl_output_interface, qMin(version, kOutputVersionMax)));
+        self->outputsByName.insert(name, output);
+        wl_output_add_listener(output, &kOutputListener, self);
     }
 }
 
@@ -589,10 +816,21 @@ void GXDEWaylandIM::Private::registryGlobalRemove(void *data, wl_registry *regis
 {
     Q_UNUSED(registry);
     auto *self = static_cast<Private *>(data);
-    // 只关心已绑定的三个全局对象；输出等其它全局对象的增删
-    //（如显示器热插拔）不影响输入法连接
+    // 输出热插拔：释放对应代理并重算候选窗缩放，不影响输入法连接
+    const auto it = self->outputsByName.find(name);
+    if (it != self->outputsByName.end()) {
+        wl_output *output = it.value();
+        self->outputsByName.erase(it);
+        self->outputScales.remove(output);
+        self->popupOutputs.removeAll(output);
+        wl_output_destroy(output);
+        self->updatePopupScale();
+        return;
+    }
+    // 已绑定的核心全局对象被移除意味着连接不可用，整体重连
     if (name != self->boundSeatName && name != self->boundImManagerName
-        && name != self->boundVkManagerName)
+        && name != self->boundVkManagerName && name != self->boundCompositorName
+        && name != self->boundShmName)
         return;
     self->teardownAsync(QStringLiteral("已绑定的全局对象被移除: %1").arg(name));
 }
@@ -701,9 +939,97 @@ void GXDEWaylandIM::Private::grabModifiers(void *data,
 }
 
 void GXDEWaylandIM::Private::grabRepeatInfo(void *data,
-                                            zwp_input_method_keyboard_grab_v2 *grab,
-                                            int32_t rate, int32_t delay)
+                                             zwp_input_method_keyboard_grab_v2 *grab,
+                                             int32_t rate, int32_t delay)
 {
     Q_UNUSED(grab);
     static_cast<Private *>(data)->handleRepeatInfo(rate, delay);
+}
+
+void GXDEWaylandIM::Private::popupTextInputRectangle(void *data,
+                                                      zwp_input_popup_surface_v2 *popup,
+                                                      int32_t x, int32_t y,
+                                                      int32_t width, int32_t height)
+{
+    Q_UNUSED(data);
+    Q_UNUSED(popup);
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+    Q_UNUSED(width);
+    Q_UNUSED(height);
+    // 文本输入矩形（popup surface 局部坐标）仅作布局提示：候选窗的
+    // 放置与屏幕边界避让由合成器完成（贴着文本输入矩形、放不下翻转），
+    // 当前渲染不需要据此调整内容
+}
+
+void GXDEWaylandIM::Private::popupSurfaceEnter(void *data, wl_surface *surface,
+                                                wl_output *output)
+{
+    Q_UNUSED(surface);
+    auto *self = static_cast<Private *>(data);
+    self->popupOutputs.append(output);
+    self->updatePopupScale();
+}
+
+void GXDEWaylandIM::Private::popupSurfaceLeave(void *data, wl_surface *surface,
+                                                wl_output *output)
+{
+    Q_UNUSED(surface);
+    auto *self = static_cast<Private *>(data);
+    self->popupOutputs.removeAll(output);
+    self->updatePopupScale();
+}
+
+void GXDEWaylandIM::Private::outputGeometry(void *data, wl_output *output, int32_t x,
+                                             int32_t y, int32_t physicalWidth,
+                                             int32_t physicalHeight, int32_t subpixel,
+                                             const char *make, const char *model,
+                                             int32_t transform)
+{
+    Q_UNUSED(data);
+    Q_UNUSED(output);
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+    Q_UNUSED(physicalWidth);
+    Q_UNUSED(physicalHeight);
+    Q_UNUSED(subpixel);
+    Q_UNUSED(make);
+    Q_UNUSED(model);
+    Q_UNUSED(transform);
+    // 位置/物理尺寸/transform 由合成器用于放置 popup，候选窗渲染只关心 scale
+}
+
+void GXDEWaylandIM::Private::outputMode(void *data, wl_output *output, uint32_t flags,
+                                         int32_t width, int32_t height, int32_t refresh)
+{
+    Q_UNUSED(data);
+    Q_UNUSED(output);
+    Q_UNUSED(flags);
+    Q_UNUSED(width);
+    Q_UNUSED(height);
+    Q_UNUSED(refresh);
+    // 分辨率/刷新率与候选窗渲染无关
+}
+
+void GXDEWaylandIM::Private::outputDone(void *data, wl_output *output)
+{
+    Q_UNUSED(data);
+    Q_UNUSED(output);
+    // 一轮输出属性更新结束：scale 事件已即时处理
+}
+
+void GXDEWaylandIM::Private::outputScale(void *data, wl_output *output, int32_t factor)
+{
+    auto *self = static_cast<Private *>(data);
+    self->outputScales[output] = factor > 0 ? factor : 1;
+    // 缩放变化只对 popup surface 当前所在输出有意义
+    if (self->popupOutputs.contains(output))
+        self->updatePopupScale();
+}
+
+void GXDEWaylandIM::Private::bufferRelease(void *data, wl_buffer *buffer)
+{
+    Q_UNUSED(data);
+    // 合成器已用完该帧缓冲：销毁代理，释放客户端资源
+    wl_buffer_destroy(buffer);
 }

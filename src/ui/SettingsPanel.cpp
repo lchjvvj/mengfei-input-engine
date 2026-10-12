@@ -15,9 +15,9 @@ SettingsPanel::SettingsPanel(GXDESettings *settings, QObject *parent)
     m_view->rootContext()->setContextProperty("settingsPanelCpp", this);
     m_view->setSource(QUrl("qrc:/ui/SettingsPanel.qml"));
     m_view->setResizeMode(QQuickView::SizeViewToRootObject);
-    m_view->setTitle(QStringLiteral("输入法设置"));
+    m_view->setTitle(QStringLiteral("梦飞输入法设置"));
 
-    // 与 CandidateBar 相同的降级策略：QML 加载失败只告警，
+    // 降级策略：QML 加载失败只告警，
     // 不影响引擎主体与 DBus 服务注册
     if (!m_view->rootObject())
         qWarning() << "[SettingsPanel] QML 根对象加载失败，设置面板不可用:"

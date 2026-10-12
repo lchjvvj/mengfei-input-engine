@@ -11,9 +11,11 @@
 
 int main(int argc, char *argv[])
 {
-    // QML窗口必须使用QGuiApplication，不能QCoreApplication！
+    // 设置面板仍是 QML 窗口，必须使用QGuiApplication，不能QCoreApplication！
     QGuiApplication app(argc, argv);
-    QGuiApplication::setApplicationName("gxde-input-engine");
+    QGuiApplication::setApplicationName("mengfei-input-engine");
+    // 产品名：梦飞输入法（窗口标题等用户可见场景的默认应用名）
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("梦飞输入法"));
     // 引擎是后台常驻服务（systemd user 单元）：关闭设置面板窗口
     // 是"最后一个窗口关闭"，不能触发进程退出
     QGuiApplication::setQuitOnLastWindowClosed(false);
@@ -22,35 +24,37 @@ int main(int argc, char *argv[])
     GXDESettings settings;
     GXDEInputCore core;
     GXDEPinyinEngine pinyin;
+    // 候选栏渲染器：不创建窗口，出帧交给 GXDEWaylandIM 经
+    // zwp_input_popup_surface_v2 显示
     CandidateBar ui(&settings);
     SettingsPanel settingsPanel(&settings);
 
-    // DBus 辅助通道：主输入链路（激活/按键/文本回写）走 zwp_input_method_v2
-    //（见下方 GXDEWaylandIM），DBus 供控制中心等组件调用：打开设置面板、
-    // 推送光标矩形，并保留 Activate/ProcessKeyEvent 兼容入口；
-    // 出站信号广播 preedit/候选/上屏文本
-    GXDEDBusAdapter dbusAdapter(&core, &pinyin, &ui, &settingsPanel);
+    // DBus 辅助通道：主输入链路（激活/按键/候选窗/文本回写）全部走
+    // zwp_input_method_v2（见下方 GXDEWaylandIM），DBus 仅保留供
+    // GXDE 控制中心打开设置面板的 ShowSettings 管理入口；
+    // 注册结果同时充当单实例守护
+    GXDEDBusAdapter dbusAdapter(&settingsPanel);
     if (!dbusAdapter.registerService()) {
-        qCritical() << "DBus 服务注册失败，退出（请检查是否已有 gxde-input-engine 实例在运行）";
+        qCritical() << "DBus 服务注册失败，退出（请检查是否已有 mengfei-input-engine 实例在运行）";
         return -1;
     }
 
     // 标准 Wayland 输入法通道：zwp_input_method_v2 客户端直连 gxde-wlcom。
     // activate/deactivate 驱动输入上下文，grab_keyboard 的按键进入
     // core.handleKeyEvent，未消费按键经 zwp_virtual_keyboard_v1 转发给
-    // 焦点应用，preedit/上屏文本经 commit(serial) 写回合成器；
-    // 连接失败或断开时每 5 秒自动重连
-    GXDEWaylandIM waylandIM(&core, &pinyin);
+    // 焦点应用，preedit/上屏文本经 commit(serial) 写回合成器；候选窗
+    // 帧经 zwp_input_popup_surface_v2 提交，由合成器放置在焦点文本
+    // 输入区域附近；连接失败或断开时每 5 秒自动重连
+    GXDEWaylandIM waylandIM(&core, &pinyin, &ui);
     waylandIM.start();
 
-    // 信号槽绑定：拼音引擎 <-> UI
+    // 信号槽绑定：拼音引擎 <-> 候选栏
     QObject::connect(&pinyin, &GXDEPinyinEngine::preeditUpdate, &ui, &CandidateBar::updatePreedit);
     QObject::connect(&pinyin, &GXDEPinyinEngine::candidateUpdate, &ui, [&](const QStringList &cands, int selIdx){
         ui.updateCandidates(cands, selIdx);
         if(!cands.isEmpty()) ui.show();
         else ui.hide();
     });
-    QObject::connect(&ui, &CandidateBar::candidateSelected, &pinyin, &GXDEPinyinEngine::selectCandidate);
     QObject::connect(&pinyin, &GXDEPinyinEngine::commitWord, &core, &GXDEInputCore::commitString);
     // 页码更新：候选栏显示 1/2 形式的页码
     QObject::connect(&pinyin, &GXDEPinyinEngine::pageInfoUpdate, &ui, &CandidateBar::updatePageInfo);
@@ -94,14 +98,12 @@ int main(int argc, char *argv[])
     QObject::connect(&core, &GXDEInputCore::preeditChanged, &ui, &CandidateBar::updatePreedit);
     QObject::connect(&core, &GXDEInputCore::candidateListChanged, &ui, &CandidateBar::updateCandidates);
     QObject::connect(&core, &GXDEInputCore::textCommitted, &ui, &CandidateBar::hide);
-    // 光标矩形：text-input-v3 set_cursor_rectangle 由 gxde-wlcom 经 DBus
-    // SetCursorRect/SetCursorPos 推送，候选栏跟随光标定位
-    QObject::connect(&core, &GXDEInputCore::cursorRectChanged, &ui, &CandidateBar::setCursorRect);
 
     // 输入上下文激活不再本地模拟：由合成器经 zwp_input_method_v2 的
-    // activate/deactivate 事件驱动（GXDEWaylandIM）；光标坐标由 gxde-wlcom
-    // 经 DBus SetCursorRect 推送
+    // activate/deactivate 事件驱动（GXDEWaylandIM）。候选窗定位也不再
+    // 需要坐标推送：zwp_input_popup_surface_v2 由合成器贴着 text-input-v3
+    // set_cursor_rectangle 上报的文本输入矩形放置，并自动做屏幕边界避让
 
-    qDebug() << "GXDE Input Engine with CandidateBar UI running...";
+    qDebug() << "Mengfei Input Engine (梦飞输入法) with CandidateBar UI running...";
     return app.exec();
 }

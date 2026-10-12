@@ -1,8 +1,8 @@
-# gxde-input-engine
+# 梦飞输入法（mengfei-input-engine）
 
 #### 介绍
 
-**GXDE输入引擎**（Wayland，适配 gxde-wlcom）
+**梦飞输入法**（Wayland，适配 gxde-wlcom）
 
 #### 定位
 
@@ -11,18 +11,20 @@
 
 #### 语言
 
-C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连 gxde-wlcom 合成器（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
+C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 input-method-v2）+ zwp_virtual_keyboard_v1 直连合成器，候选zwp_input_popup_surface_v2 显示（应用侧仍走 text-input-v3，由合成器桥接）；拼音词库与候选计算由 librime（Rime 中州韵）提供
 
 
 #### 使用说明
 
-1. 原生对接  gxde-wlcom ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用
+1. 原生对接合成器 ：引擎作为 zwp_input_method_v2 客户端直连合成器，按键经 grab_keyboard 独占抓取获得，未消费的按键经 zwp_virtual_keyboard_v1 转发回焦点应用，候选窗经 zwp_input_popup_surface_v2 由合成器放置在焦点文本输入区域附近
 ​
-2. 可选两种模式：独立内置引擎 / 作为fcitx5前端代理
+2. 可选模式：独立内置引擎/作为fcitx5前端代理
 ​
-3. 适配GXDE桌面环境，跟随GXDE主题（深色/浅色）
+3. 适配GXDE和其他桌面环境，跟随系统主题（深色/浅色）
 ​
-4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/gxde-input-engine/rime/
+4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/mengfei-input-engine/rime/
+​
+5. 设置面板运行依赖：设置面板为 QtQuick（QML）界面，运行时依赖 Qt6 QML 模块包（qml6-module-qtquick、qml6-module-qtquick-controls、qml6-module-qtquick-layouts，及其隐式加载的 qml6-module-qtqml、qml6-module-qtqml-models、qml6-module-qtqml-workerscript、qml6-module-qtquick-templates，随 deb 包自动安装）；QML 模块由引擎运行时动态加载，缺失时引擎主体与候选栏（QPainter 渲染）不受影响，仅设置面板不可用
 
 #### 自动构建
 
@@ -70,29 +72,29 @@ chmod a+x ./build-deb
 
 # 用户会话启用服务
 systemctl --user daemon-reload
-systemctl --user enable --now gxde-input-engine.service
+systemctl --user enable --now mengfei-input-engine.service
 
 # 查看运行状态
-systemctl --user status gxde-input-engine.service
+systemctl --user status mengfei-input-engine.service
 
 # 查看日志
-journalctl --user -u gxde-input-engine.service -f
+journalctl --user -u mengfei-input-engine.service -f
 
 #### 运行流程
 
-1. gxde-wlcom 合成器启动
+1. gxde-wlcom或其他合成器启动
 
 ​
-2.  gxde-input-engine  作为独立后台进程启动（systemd/user 服务），通过 wl_display_connect 直连合成器并注册为 zwp_input_method_v2 输入法（合成器未就绪时每 5 秒自动重试）
+2. mengfei-input-engine（梦飞输入法）作为独立后台进程启动（systemd/user 服务），通过 wl_display_connect 直连合成器并注册为 zwp_input_method_v2 输入法（合成器未就绪时每 5 秒自动重试）
 
 ​
-3. 用户点击输入框 → 应用经 text-input-v3 请求激活 → gxde-wlcom 向引擎发送 activate 事件，引擎 grab_keyboard 取得独占按键抓取
+3. 用户点击输入框 → 应用经 text-input-v3 请求激活 → 合成器向引擎发送 activate 事件，引擎 grab_keyboard 取得独占按键抓取
 
 ​
 4. 按键由合成器路由给引擎：参与组字的按键被引擎消费，其余按键经虚拟键盘转发回应用；按键自动重复与修饰键状态由引擎按 repeat_info/modifiers 事件补齐并转发
 
 ​
-5. 输入拼音 → 拼音引擎查询候选词，更新候选UI，preedit 经 set_preedit_string + commit 实时写回应用
+5. 输入拼音 → 拼音引擎查询候选词，候选窗（QPainter 渲染，wl_shm 缓冲）经 zwp_input_popup_surface_v2 提交显示，位置由合成器贴着文本输入矩形放置，preedit 经 set_preedit_string + commit 实时写回应用
 
 ​
 6. 数字选择候选 → 汉字经 commit_string + commit 提交到Wayland应用（浏览器、GXDE控制中心等）
