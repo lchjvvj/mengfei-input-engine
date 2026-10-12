@@ -23,6 +23,8 @@ C++ + Qt6，使用 wayland-client 协议，通过 zwp_input_method_v2（标准 i
 3. 适配GXDE和其他桌面环境，跟随系统主题（深色/浅色）
 ​
 4. 拼音词库运行依赖：librime1 与 rime 词典数据（librime-data、rime-data-luna-pinyin，随 deb 包自动安装）；首次启动自动部署拼音·简化字方案并编译词典（约数秒），用户词频与个性化配置位于 ~/.config/mengfei-input-engine/rime/
+​
+5. 设置面板运行依赖：设置面板为 QtQuick（QML）界面，运行时依赖 Qt6 QML 模块包（qml6-module-qtquick、qml6-module-qtquick-controls、qml6-module-qtquick-layouts，及其隐式加载的 qml6-module-qtqml、qml6-module-qtqml-models、qml6-module-qtqml-workerscript、qml6-module-qtquick-templates，随 deb 包自动安装）；QML 模块由引擎运行时动态加载，缺失时引擎主体与候选栏（QPainter 渲染）不受影响，仅设置面板不可用
 
 #### 自动构建
 

@@ -8,7 +8,7 @@ Homepage: https://gitee.com/vghxug/gxde-input-engine
 
 Package: mengfei-input-engine
 Architecture: any
-Depends: librime-data, rime-data-luna-pinyin, ${shlibs:Depends}, ${misc:Depends}
+Depends: librime-data, rime-data-luna-pinyin, qml6-module-qtqml, qml6-module-qtqml-models, qml6-module-qtqml-workerscript, qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-layouts, qml6-module-qtquick-templates, ${shlibs:Depends}, ${misc:Depends}
 Description: Mengfei (梦飞输入法) Native Wayland Input Engine
  梦飞输入法 (Mengfei IME),  works with gxde-wlcom.
  Pinyin engine powered by librime (Rime), integrates with the compositor via

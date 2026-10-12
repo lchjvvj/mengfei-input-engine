@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(mengfei-input-engine VERSION 0.2.1 LANGUAGES C CXX)
+project(mengfei-input-engine VERSION 0.2.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
